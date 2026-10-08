@@ -11,7 +11,7 @@
 
 `Requires:` 行列出插件通过 `inject` 注入的服务键：其 `cordis.yml` 树还必须加载这些服务的提供者。范围限定为 harness 层级（`packages/`）；配置树还可能加载的 vendored cordis 插件（`hmr`、控制台日志记录器等）固定为上游源代码（参见 [vendoring policy](../vendor/README.md)），未收录于此目录。
 
-<a id="deepseek-aidsh-acp"></a>
+<a id="vrealdsh-acp"></a>
 
 ## `@vreal/dsh-acp`
 
@@ -33,7 +33,7 @@ export interface AcpConfig {
 
 来源：[`packages/acp/acp/src/index.ts:71`](../packages/acp/acp/src/index.ts)
 
-<a id="deepseek-aidsh-acp-demo"></a>
+<a id="vrealdsh-acp-demo"></a>
 
 ## `@vreal/dsh-acp-demo`
 
@@ -84,11 +84,11 @@ export interface Config {
 }
 ```
 
-依赖：[`agentCore`](../packages/examples/agent-spine-demo/src/index.ts) · [`JsonlCompression`](../packages/session/session-persistence-jsonl/src/index.ts) · [`ToolsConfig`](#deepseek-aidsh-tools)
+依赖：[`agentCore`](../packages/examples/agent-spine-demo/src/index.ts) · [`JsonlCompression`](../packages/session/session-persistence-jsonl/src/index.ts) · [`ToolsConfig`](#vrealdsh-tools)
 
 来源：[`packages/examples/acp-demo/src/index.ts:39`](../packages/examples/acp-demo/src/index.ts)
 
-<a id="deepseek-aidsh-agent-default-model"></a>
+<a id="vrealdsh-agent-default-model"></a>
 
 ## `@vreal/dsh-agent-default-model`
 
@@ -104,7 +104,7 @@ export interface Config {
 
 来源：[`packages/core/agent-default-model/src/index.ts:41`](../packages/core/agent-default-model/src/index.ts)
 
-<a id="deepseek-aidsh-agent-instructions"></a>
+<a id="vrealdsh-agent-instructions"></a>
 
 ## `@vreal/dsh-agent-instructions`
 
@@ -134,7 +134,7 @@ export interface Config {
 
 来源：[`packages/context/agent-instructions/src/config.ts:18`](../packages/context/agent-instructions/src/config.ts)
 
-<a id="deepseek-aidsh-agent-loop"></a>
+<a id="vrealdsh-agent-loop"></a>
 
 ## `@vreal/dsh-agent-loop`
 
@@ -166,7 +166,7 @@ export interface Config {
 
 来源：[`packages/core/agent-loop/src/index.ts:255`](../packages/core/agent-loop/src/index.ts)
 
-<a id="deepseek-aidsh-agent-presets"></a>
+<a id="vrealdsh-agent-presets"></a>
 
 ## `@vreal/dsh-agent-presets`
 
@@ -204,7 +204,7 @@ export type PresetTrust = 'system' | 'user'
 
 来源：[`packages/preset/agent-presets/src/preset.ts:52`](../packages/preset/agent-presets/src/preset.ts)
 
-<a id="deepseek-aidsh-agent-spine-demo"></a>
+<a id="vrealdsh-agent-spine-demo"></a>
 
 ## `@vreal/dsh-agent-spine-demo`
 
@@ -292,11 +292,11 @@ export interface GoalConfig {
 }
 ```
 
-依赖：[`AgentLoopConfig`](#deepseek-aidsh-agent-loop) · [`GoalDomainConfig`](#deepseek-aidsh-goal) · [`InvariantConfig`](#deepseek-aidsh-invariants) · [`JobsConfig`](#deepseek-aidsh-jobs-local) · [`SessionTitleConfig`](#deepseek-aidsh-session-title) · [`SkillFileSystem`](../packages/skill/skill-filesystem/src/index.ts) · [`SkillRegistryConfig`](#deepseek-aidsh-skill) · [`SystemPromptConfig`](#deepseek-aidsh-system-prompt) · [`toolBash`](../packages/shell/tool-bash/src/index.ts) · [`toolGoal`](../packages/goal/tool-goal/src/index.ts) · [`toolJobs`](../packages/jobs/tool-jobs/src/index.ts) · [`ToolsConfig`](#deepseek-aidsh-tools) · [`toolSkill`](../packages/skill/tool-skill/src/index.ts) · [`workspaceContext`](../packages/context/agent-instructions/src/index.ts)
+依赖：[`AgentLoopConfig`](#vrealdsh-agent-loop) · [`GoalDomainConfig`](#vrealdsh-goal) · [`InvariantConfig`](#vrealdsh-invariants) · [`JobsConfig`](#vrealdsh-jobs-local) · [`SessionTitleConfig`](#vrealdsh-session-title) · [`SkillFileSystem`](../packages/skill/skill-filesystem/src/index.ts) · [`SkillRegistryConfig`](#vrealdsh-skill) · [`SystemPromptConfig`](#vrealdsh-system-prompt) · [`toolBash`](../packages/shell/tool-bash/src/index.ts) · [`toolGoal`](../packages/goal/tool-goal/src/index.ts) · [`toolJobs`](../packages/jobs/tool-jobs/src/index.ts) · [`ToolsConfig`](#vrealdsh-tools) · [`toolSkill`](../packages/skill/tool-skill/src/index.ts) · [`workspaceContext`](../packages/context/agent-instructions/src/index.ts)
 
 来源：[`packages/examples/agent-spine-demo/src/index.ts:92`](../packages/examples/agent-spine-demo/src/index.ts)
 
-<a id="deepseek-aidsh-agent-tool-presentation"></a>
+<a id="vrealdsh-agent-tool-presentation"></a>
 
 ## `@vreal/dsh-agent-tool-presentation`
 
@@ -320,7 +320,7 @@ export interface Config {
 
 来源：[`packages/core/agent-tool-presentation/src/index.ts:38`](../packages/core/agent-tool-presentation/src/index.ts)
 
-<a id="deepseek-aidsh-attachment-local"></a>
+<a id="vrealdsh-attachment-local"></a>
 
 ## `@vreal/dsh-attachment-local`
 
@@ -350,7 +350,7 @@ export interface Config {
 
 来源：[`packages/attachment/attachment-local/src/index.ts:51`](../packages/attachment/attachment-local/src/index.ts)
 
-<a id="deepseek-aidsh-bash-local"></a>
+<a id="vrealdsh-bash-local"></a>
 
 ## `@vreal/dsh-bash-local`
 
@@ -376,7 +376,7 @@ export interface Config {
 
 来源：[`packages/shell/bash-local/src/index.ts:41`](../packages/shell/bash-local/src/index.ts)
 
-<a id="deepseek-aidsh-bash-sandbox"></a>
+<a id="vrealdsh-bash-sandbox"></a>
 
 ## `@vreal/dsh-bash-sandbox`
 
@@ -393,11 +393,11 @@ export interface Config {
 export type Config = LocalConfig
 ```
 
-依赖：[`LocalConfig`](#deepseek-aidsh-bash-local)
+依赖：[`LocalConfig`](#vrealdsh-bash-local)
 
 来源：[`packages/shell/bash-sandbox/src/index.ts:35`](../packages/shell/bash-sandbox/src/index.ts)
 
-<a id="deepseek-aidsh-client-connection"></a>
+<a id="vrealdsh-client-connection"></a>
 
 ## `@vreal/dsh-client-connection`
 
@@ -422,7 +422,7 @@ export interface ConnectionConfig {
 
 来源：[`packages/client/connection/src/index.ts:50`](../packages/client/connection/src/index.ts)
 
-<a id="deepseek-aidsh-client-hmr"></a>
+<a id="vrealdsh-client-hmr"></a>
 
 ## `@vreal/dsh-client-hmr`
 
@@ -438,7 +438,7 @@ export interface Config {
 
 来源：[`packages/client/hmr/src/index.ts:31`](../packages/client/hmr/src/index.ts)
 
-<a id="deepseek-aidsh-code-runtime-worker-thread"></a>
+<a id="vrealdsh-code-runtime-worker-thread"></a>
 
 ## `@vreal/dsh-code-runtime-worker-thread`
 
@@ -475,7 +475,7 @@ export interface Config {
 
 来源：[`packages/code-runtime/code-runtime-worker-thread/src/index.ts:25`](../packages/code-runtime/code-runtime-worker-thread/src/index.ts)
 
-<a id="deepseek-aidsh-compaction-basic"></a>
+<a id="vrealdsh-compaction-basic"></a>
 
 ## `@vreal/dsh-compaction-basic`
 
@@ -521,7 +521,7 @@ export interface ModelCompactPolicyConfig extends CompactionPolicyConfig {
 
 来源：[`packages/compaction/compaction-basic/src/types.ts:38`](../packages/compaction/compaction-basic/src/types.ts)
 
-<a id="deepseek-aidsh-compaction-tool-result-pruner"></a>
+<a id="vrealdsh-compaction-tool-result-pruner"></a>
 
 ## `@vreal/dsh-compaction-tool-result-pruner`
 
@@ -541,7 +541,7 @@ export interface ToolResultPruneConfig {
 
 来源：[`packages/compaction/compaction-tool-result-pruner/src/types.ts:4`](../packages/compaction/compaction-tool-result-pruner/src/types.ts)
 
-<a id="deepseek-aidsh-cordis-host-runner"></a>
+<a id="vrealdsh-cordis-host-runner"></a>
 
 ## `@vreal/dsh-cordis-host-runner`
 
@@ -557,7 +557,7 @@ export interface Config {
 
 来源：[`packages/extensions/cordis-host-runner/src/index.ts:88`](../packages/extensions/cordis-host-runner/src/index.ts)
 
-<a id="deepseek-aidsh-credentials-local"></a>
+<a id="vrealdsh-credentials-local"></a>
 
 ## `@vreal/dsh-credentials-local`
 
@@ -577,7 +577,7 @@ export interface Config {
 
 来源：[`packages/credentials/credentials-local/src/index.ts:64`](../packages/credentials/credentials-local/src/index.ts)
 
-<a id="deepseek-aidsh-e2b"></a>
+<a id="vrealdsh-e2b"></a>
 
 ## `@vreal/dsh-e2b`
 
@@ -595,7 +595,7 @@ export interface Config {
 
 来源：[`packages/e2b/e2b/src/index.ts:43`](../packages/e2b/e2b/src/index.ts)
 
-<a id="deepseek-aidsh-experimental-agent-team"></a>
+<a id="vrealdsh-experimental-agent-team"></a>
 
 ## `@vreal/dsh-experimental-agent-team`
 
@@ -619,7 +619,7 @@ export interface Config {
 
 来源：[`packages/experimental/agent-team/src/types.ts:125`](../packages/experimental/agent-team/src/types.ts)
 
-<a id="deepseek-aidsh-experimental-tool-agent-team"></a>
+<a id="vrealdsh-experimental-tool-agent-team"></a>
 
 ## `@vreal/dsh-experimental-tool-agent-team`
 
@@ -637,7 +637,7 @@ export interface Config {
 
 来源：[`packages/experimental/tool-agent-team/src/index.ts:17`](../packages/experimental/tool-agent-team/src/index.ts)
 
-<a id="deepseek-aidsh-file-reference-local"></a>
+<a id="vrealdsh-file-reference-local"></a>
 
 ## `@vreal/dsh-file-reference-local`
 
@@ -657,7 +657,7 @@ export interface Config {
 
 来源：[`packages/context/file-reference-local/src/index.ts:35`](../packages/context/file-reference-local/src/index.ts)
 
-<a id="deepseek-aidsh-fs-local"></a>
+<a id="vrealdsh-fs-local"></a>
 
 ## `@vreal/dsh-fs-local`
 
@@ -676,7 +676,7 @@ export interface Config {
 
 来源：[`packages/fs/fs-local/src/index.ts:41`](../packages/fs/fs-local/src/index.ts)
 
-<a id="deepseek-aidsh-fs-sandbox"></a>
+<a id="vrealdsh-fs-sandbox"></a>
 
 ## `@vreal/dsh-fs-sandbox`
 
@@ -692,11 +692,11 @@ export interface Config {
 export type Config = LocalConfig
 ```
 
-依赖：[`LocalConfig`](#deepseek-aidsh-fs-local)
+依赖：[`LocalConfig`](#vrealdsh-fs-local)
 
 来源：[`packages/fs/fs-sandbox/src/index.ts:49`](../packages/fs/fs-sandbox/src/index.ts)
 
-<a id="deepseek-aidsh-goal"></a>
+<a id="vrealdsh-goal"></a>
 
 ## `@vreal/dsh-goal`
 
@@ -712,7 +712,7 @@ export interface Config {
 
 来源：[`packages/goal/goal/src/index.ts:116`](../packages/goal/goal/src/index.ts)
 
-<a id="deepseek-aidsh-headless"></a>
+<a id="vrealdsh-headless"></a>
 
 ## `@vreal/dsh-headless`
 
@@ -728,7 +728,7 @@ export interface Config {
 
 来源：[`packages/bundle/headless/src/index.ts:31`](../packages/bundle/headless/src/index.ts)
 
-<a id="deepseek-aidsh-hooks-claude-code"></a>
+<a id="vrealdsh-hooks-claude-code"></a>
 
 ## `@vreal/dsh-hooks-claude-code`
 
@@ -766,7 +766,7 @@ export interface Config {
 
 来源：[`packages/hooks/hooks-claude-code/src/index.ts:45`](../packages/hooks/hooks-claude-code/src/index.ts)
 
-<a id="deepseek-aidsh-hooks-codex"></a>
+<a id="vrealdsh-hooks-codex"></a>
 
 ## `@vreal/dsh-hooks-codex`
 
@@ -793,7 +793,7 @@ export interface Config {
 
 来源：[`packages/hooks/hooks-codex/src/index.ts:44`](../packages/hooks/hooks-codex/src/index.ts)
 
-<a id="deepseek-aidsh-host-apiproxy"></a>
+<a id="vrealdsh-host-apiproxy"></a>
 
 ## `@vreal/dsh-host-apiproxy`
 
@@ -827,7 +827,7 @@ export interface Config {
 
 来源：[`packages/host/apiproxy/src/index.ts:41`](../packages/host/apiproxy/src/index.ts)
 
-<a id="deepseek-aidsh-host-directory-picker-browse"></a>
+<a id="vrealdsh-host-directory-picker-browse"></a>
 
 ## `@vreal/dsh-host-directory-picker-browse`
 
@@ -841,7 +841,7 @@ export interface Config {
 
 来源：[`packages/host/directory-picker-browse/src/index.ts:181`](../packages/host/directory-picker-browse/src/index.ts)
 
-<a id="deepseek-aidsh-host-frontend-static"></a>
+<a id="vrealdsh-host-frontend-static"></a>
 
 ## `@vreal/dsh-host-frontend-static`
 
@@ -857,7 +857,7 @@ export interface Config {
 
 来源：[`packages/host/frontend-static/src/index.ts:28`](../packages/host/frontend-static/src/index.ts)
 
-<a id="deepseek-aidsh-host-webserver"></a>
+<a id="vrealdsh-host-webserver"></a>
 
 ## `@vreal/dsh-host-webserver`
 
@@ -873,7 +873,7 @@ export interface Config {
 
 来源：[`packages/host/webserver/src/index.ts:59`](../packages/host/webserver/src/index.ts)
 
-<a id="deepseek-aidsh-invariants"></a>
+<a id="vrealdsh-invariants"></a>
 
 ## `@vreal/dsh-invariants`
 
@@ -891,7 +891,7 @@ export interface Config {
 
 来源：[`packages/runtime-diagnostics/invariants/src/index.ts:15`](../packages/runtime-diagnostics/invariants/src/index.ts)
 
-<a id="deepseek-aidsh-jobs-local"></a>
+<a id="vrealdsh-jobs-local"></a>
 
 ## `@vreal/dsh-jobs-local`
 
@@ -908,7 +908,7 @@ export interface Config {
 
 来源：[`packages/jobs/jobs-local/src/index.ts:31`](../packages/jobs/jobs-local/src/index.ts)
 
-<a id="deepseek-aidsh-llm-deepseek"></a>
+<a id="vrealdsh-llm-deepseek"></a>
 
 ## `@vreal/dsh-llm-deepseek`
 
@@ -991,7 +991,7 @@ export interface DeepSeekCatalogModel {
 
 来源：[`packages/llm/llm-deepseek/src/index.ts:106`](../packages/llm/llm-deepseek/src/index.ts)
 
-<a id="deepseek-aidsh-llm-pi-ai"></a>
+<a id="vrealdsh-llm-pi-ai"></a>
 
 ## `@vreal/dsh-llm-pi-ai`
 
@@ -1245,7 +1245,7 @@ export type PiAiThinkingFormat = NonNullable<OpenAICompletionsCompat['thinkingFo
 
 来源：[`packages/llm/llm-pi-ai/src/config.ts:213`](../packages/llm/llm-pi-ai/src/config.ts)
 
-<a id="deepseek-aidsh-llm-replay"></a>
+<a id="vrealdsh-llm-replay"></a>
 
 ## `@vreal/dsh-llm-replay`
 
@@ -1313,7 +1313,7 @@ export interface ReplayModelConfig {
 
 来源：[`packages/test-support/llm-replay/src/index.ts:809`](../packages/test-support/llm-replay/src/index.ts)
 
-<a id="deepseek-aidsh-llm-retry"></a>
+<a id="vrealdsh-llm-retry"></a>
 
 ## `@vreal/dsh-llm-retry`
 
@@ -1326,7 +1326,7 @@ export type Config = Readonly<Record<string, never>>
 
 来源：[`packages/llm/llm-retry/src/index.ts:24`](../packages/llm/llm-retry/src/index.ts)
 
-<a id="deepseek-aidsh-lsp-stdio"></a>
+<a id="vrealdsh-lsp-stdio"></a>
 
 ## `@vreal/dsh-lsp-stdio`
 
@@ -1368,7 +1368,7 @@ export interface LspLocalServerConfig {
 
 来源：[`packages/lsp/lsp-stdio/src/index.ts:82`](../packages/lsp/lsp-stdio/src/index.ts)
 
-<a id="deepseek-aidsh-mcp-client"></a>
+<a id="vrealdsh-mcp-client"></a>
 
 ## `@vreal/dsh-mcp-client`
 
@@ -1441,7 +1441,7 @@ export interface ReconnectConfig {
 
 来源：[`packages/mcp/mcp-client/src/index.ts:98`](../packages/mcp/mcp-client/src/index.ts)
 
-<a id="deepseek-aidsh-message-feedback"></a>
+<a id="vrealdsh-message-feedback"></a>
 
 ## `@vreal/dsh-message-feedback`
 
@@ -1457,7 +1457,7 @@ export interface Config {
 
 来源：[`packages/feedback/message-feedback/src/index.ts:49`](../packages/feedback/message-feedback/src/index.ts)
 
-<a id="deepseek-aidsh-permission-presets"></a>
+<a id="vrealdsh-permission-presets"></a>
 
 ## `@vreal/dsh-permission-presets`
 
@@ -1496,7 +1496,7 @@ export interface PresetSpec {
 
 来源：[`packages/interaction/permission-presets/src/index.ts:156`](../packages/interaction/permission-presets/src/index.ts)
 
-<a id="deepseek-aidsh-persona"></a>
+<a id="vrealdsh-persona"></a>
 
 ## `@vreal/dsh-persona`
 
@@ -1520,7 +1520,7 @@ export interface Config {
 
 来源：[`packages/preset/persona/src/index.ts:34`](../packages/preset/persona/src/index.ts)
 
-<a id="deepseek-aidsh-plan-mode"></a>
+<a id="vrealdsh-plan-mode"></a>
 
 ## `@vreal/dsh-plan-mode`
 
@@ -1536,7 +1536,7 @@ export interface PlanModeConfig {
 
 来源：[`packages/plan/plan-mode/src/index.ts:70`](../packages/plan/plan-mode/src/index.ts)
 
-<a id="deepseek-aidsh-pwsh-local"></a>
+<a id="vrealdsh-pwsh-local"></a>
 
 ## `@vreal/dsh-pwsh-local`
 
@@ -1569,7 +1569,7 @@ export interface Config {
 
 来源：[`packages/shell/pwsh-local/src/index.ts:58`](../packages/shell/pwsh-local/src/index.ts)
 
-<a id="deepseek-aidsh-pwsh-sandbox"></a>
+<a id="vrealdsh-pwsh-sandbox"></a>
 
 ## `@vreal/dsh-pwsh-sandbox`
 
@@ -1587,11 +1587,11 @@ export interface Config {
 export type Config = LocalConfig
 ```
 
-依赖：[`LocalConfig`](#deepseek-aidsh-pwsh-local)
+依赖：[`LocalConfig`](#vrealdsh-pwsh-local)
 
 来源：[`packages/shell/pwsh-sandbox/src/index.ts:40`](../packages/shell/pwsh-sandbox/src/index.ts)
 
-<a id="deepseek-aidsh-repeat-tool-reminder"></a>
+<a id="vrealdsh-repeat-tool-reminder"></a>
 
 ## `@vreal/dsh-repeat-tool-reminder`
 
@@ -1625,7 +1625,7 @@ export interface Config {
 
 来源：[`packages/guard/repeat-tool-reminder/src/index.ts:28`](../packages/guard/repeat-tool-reminder/src/index.ts)
 
-<a id="deepseek-aidsh-sandbox-local"></a>
+<a id="vrealdsh-sandbox-local"></a>
 
 ## `@vreal/dsh-sandbox-local`
 
@@ -1657,7 +1657,7 @@ export interface Config {
 
 来源：[`packages/sandbox/sandbox-local/src/index.ts:44`](../packages/sandbox/sandbox-local/src/index.ts)
 
-<a id="deepseek-aidsh-sandbox-policy"></a>
+<a id="vrealdsh-sandbox-policy"></a>
 
 ## `@vreal/dsh-sandbox-policy`
 
@@ -1684,7 +1684,7 @@ export interface Config {
 
 来源：[`packages/sandbox/sandbox-policy/src/index.ts:67`](../packages/sandbox/sandbox-policy/src/index.ts)
 
-<a id="deepseek-aidsh-sdk-jsonrpc-server"></a>
+<a id="vrealdsh-sdk-jsonrpc-server"></a>
 
 ## `@vreal/dsh-sdk-jsonrpc-server`
 
@@ -1708,7 +1708,7 @@ export interface JsonRpcConfig {
 
 来源：[`packages/sdk/server/src/index.ts:29`](../packages/sdk/server/src/index.ts)
 
-<a id="deepseek-aidsh-session-persistence-jsonl"></a>
+<a id="vrealdsh-session-persistence-jsonl"></a>
 
 ## `@vreal/dsh-session-persistence-jsonl`
 
@@ -1747,7 +1747,7 @@ export type JsonlCompression = 'zstd' | 'none'
 
 来源：[`packages/session/session-persistence-jsonl/src/index.ts:60`](../packages/session/session-persistence-jsonl/src/index.ts)
 
-<a id="deepseek-aidsh-session-persistence-sqlite"></a>
+<a id="vrealdsh-session-persistence-sqlite"></a>
 
 ## `@vreal/dsh-session-persistence-sqlite`
 
@@ -1774,7 +1774,7 @@ export type JournalMode = 'wal' | 'delete' | 'truncate' | 'persist'
 
 来源：[`packages/session/session-persistence-sqlite/src/index.ts:36`](../packages/session/session-persistence-sqlite/src/index.ts)
 
-<a id="deepseek-aidsh-session-projection-cache"></a>
+<a id="vrealdsh-session-projection-cache"></a>
 
 ## `@vreal/dsh-session-projection-cache`
 
@@ -1797,7 +1797,7 @@ export interface Config {
 
 来源：[`packages/session/session-projection-cache/src/index.ts:42`](../packages/session/session-projection-cache/src/index.ts)
 
-<a id="deepseek-aidsh-session-query-sqlite"></a>
+<a id="vrealdsh-session-query-sqlite"></a>
 
 ## `@vreal/dsh-session-query-sqlite`
 
@@ -1843,7 +1843,7 @@ export type JournalMode = 'wal' | 'delete' | 'truncate' | 'persist'
 
 来源：[`packages/session-query/session-query-sqlite/src/index.ts:89`](../packages/session-query/session-query-sqlite/src/index.ts)
 
-<a id="deepseek-aidsh-session-reference"></a>
+<a id="vrealdsh-session-reference"></a>
 
 ## `@vreal/dsh-session-reference`
 
@@ -1863,7 +1863,7 @@ export interface Config {
 
 来源：[`packages/context/session-reference/src/config.ts:11`](../packages/context/session-reference/src/config.ts)
 
-<a id="deepseek-aidsh-session-telemetry-otel"></a>
+<a id="vrealdsh-session-telemetry-otel"></a>
 
 ## `@vreal/dsh-session-telemetry-otel`
 
@@ -1909,7 +1909,7 @@ export enum SessionTelemetryMode {
 
 来源：[`packages/session/session-telemetry-otel/src/index.ts:91`](../packages/session/session-telemetry-otel/src/index.ts)
 
-<a id="deepseek-aidsh-session-title"></a>
+<a id="vrealdsh-session-title"></a>
 
 ## `@vreal/dsh-session-title`
 
@@ -1929,7 +1929,7 @@ export interface Config {
 
 来源：[`packages/session/session-title/src/index.ts:79`](../packages/session/session-title/src/index.ts)
 
-<a id="deepseek-aidsh-session-title-all-prompts-llm"></a>
+<a id="vrealdsh-session-title-all-prompts-llm"></a>
 
 ## `@vreal/dsh-session-title-all-prompts-llm`
 
@@ -1944,7 +1944,7 @@ export type Config = SessionTitleLlmConfig
 
 来源：[`packages/session/session-title-all-prompts-llm/src/index.ts:15`](../packages/session/session-title-all-prompts-llm/src/index.ts)
 
-<a id="deepseek-aidsh-session-title-first-prompt-llm"></a>
+<a id="vrealdsh-session-title-first-prompt-llm"></a>
 
 ## `@vreal/dsh-session-title-first-prompt-llm`
 
@@ -1959,7 +1959,7 @@ export type Config = SessionTitleLlmConfig
 
 来源：[`packages/session/session-title-first-prompt-llm/src/index.ts:15`](../packages/session/session-title-first-prompt-llm/src/index.ts)
 
-<a id="deepseek-aidsh-settings-file"></a>
+<a id="vrealdsh-settings-file"></a>
 
 ## `@vreal/dsh-settings-file`
 
@@ -1979,7 +1979,7 @@ export interface Config {
 
 来源：[`packages/settings/settings-file/src/index.ts:21`](../packages/settings/settings-file/src/index.ts)
 
-<a id="deepseek-aidsh-shell-env"></a>
+<a id="vrealdsh-shell-env"></a>
 
 ## `@vreal/dsh-shell-env`
 
@@ -1993,7 +1993,7 @@ export interface Config {
 
 来源：[`packages/shell/shell-env/src/index.ts:29`](../packages/shell/shell-env/src/index.ts)
 
-<a id="deepseek-aidsh-skill"></a>
+<a id="vrealdsh-skill"></a>
 
 ## `@vreal/dsh-skill`
 
@@ -2007,7 +2007,7 @@ export interface Config {
 
 来源：[`packages/skill/skill/src/index.ts:279`](../packages/skill/skill/src/index.ts)
 
-<a id="deepseek-aidsh-skill-filesystem"></a>
+<a id="vrealdsh-skill-filesystem"></a>
 
 ## `@vreal/dsh-skill-filesystem`
 
@@ -2045,7 +2045,7 @@ export interface Config {
 
 来源：[`packages/skill/skill-filesystem/src/index.ts:49`](../packages/skill/skill-filesystem/src/index.ts)
 
-<a id="deepseek-aidsh-spill-local"></a>
+<a id="vrealdsh-spill-local"></a>
 
 ## `@vreal/dsh-spill-local`
 
@@ -2063,7 +2063,7 @@ export interface Config {
 
 来源：[`packages/spill/spill-local/src/index.ts:22`](../packages/spill/spill-local/src/index.ts)
 
-<a id="deepseek-aidsh-spill-policy"></a>
+<a id="vrealdsh-spill-policy"></a>
 
 ## `@vreal/dsh-spill-policy`
 
@@ -2083,7 +2083,7 @@ export interface Config {
 
 来源：[`packages/spill/spill-policy/src/index.ts:60`](../packages/spill/spill-policy/src/index.ts)
 
-<a id="deepseek-aidsh-storage-domain"></a>
+<a id="vrealdsh-storage-domain"></a>
 
 ## `@vreal/dsh-storage-domain`
 
@@ -2106,7 +2106,7 @@ export interface Config {
 
 来源：[`packages/storage/storage-domain/src/index.ts:52`](../packages/storage/storage-domain/src/index.ts)
 
-<a id="deepseek-aidsh-storage-json"></a>
+<a id="vrealdsh-storage-json"></a>
 
 ## `@vreal/dsh-storage-json`
 
@@ -2127,7 +2127,7 @@ export interface Config {
 
 来源：[`packages/storage/storage-json/src/index.ts:27`](../packages/storage/storage-json/src/index.ts)
 
-<a id="deepseek-aidsh-storage-sqlite"></a>
+<a id="vrealdsh-storage-sqlite"></a>
 
 ## `@vreal/dsh-storage-sqlite`
 
@@ -2167,7 +2167,7 @@ export type JournalMode = 'wal' | 'delete' | 'truncate' | 'persist'
 
 来源：[`packages/storage/storage-sqlite/src/index.ts:24`](../packages/storage/storage-sqlite/src/index.ts)
 
-<a id="deepseek-aidsh-subagent-acp"></a>
+<a id="vrealdsh-subagent-acp"></a>
 
 ## `@vreal/dsh-subagent-acp`
 
@@ -2220,7 +2220,7 @@ export type PermissionPolicy = 'allow' | 'reject'
 
 来源：[`packages/subagent/subagent-acp/src/index.ts:27`](../packages/subagent/subagent-acp/src/index.ts)
 
-<a id="deepseek-aidsh-subagent-claude-code"></a>
+<a id="vrealdsh-subagent-claude-code"></a>
 
 ## `@vreal/dsh-subagent-claude-code`
 
@@ -2253,7 +2253,7 @@ export type ClaudeCodePermissionMode = typeof CLAUDE_CODE_PERMISSION_MODES[numbe
 
 来源：[`packages/subagent/subagent-claude-code/src/index.ts:38`](../packages/subagent/subagent-claude-code/src/index.ts)
 
-<a id="deepseek-aidsh-subagent-codex"></a>
+<a id="vrealdsh-subagent-codex"></a>
 
 ## `@vreal/dsh-subagent-codex`
 
@@ -2284,7 +2284,7 @@ export type CodexPermissionMode =
 
 来源：[`packages/subagent/subagent-codex/src/index.ts:36`](../packages/subagent/subagent-codex/src/index.ts)
 
-<a id="deepseek-aidsh-subagent-dsh-sdk"></a>
+<a id="vrealdsh-subagent-dsh-sdk"></a>
 
 ## `@vreal/dsh-subagent-dsh-sdk`
 
@@ -2337,7 +2337,7 @@ export interface Config {
 
 来源：[`packages/subagent/subagent-dsh-sdk/src/index.ts:29`](../packages/subagent/subagent-dsh-sdk/src/index.ts)
 
-<a id="deepseek-aidsh-subagent-fork-in-process"></a>
+<a id="vrealdsh-subagent-fork-in-process"></a>
 
 ## `@vreal/dsh-subagent-fork-in-process`
 
@@ -2353,7 +2353,7 @@ export interface Config {
 
 来源：[`packages/subagent/subagent-fork-in-process/src/index.ts:31`](../packages/subagent/subagent-fork-in-process/src/index.ts)
 
-<a id="deepseek-aidsh-subagent-spawn-in-process"></a>
+<a id="vrealdsh-subagent-spawn-in-process"></a>
 
 ## `@vreal/dsh-subagent-spawn-in-process`
 
@@ -2369,7 +2369,7 @@ export interface Config {
 
 来源：[`packages/subagent/subagent-spawn-in-process/src/index.ts:25`](../packages/subagent/subagent-spawn-in-process/src/index.ts)
 
-<a id="deepseek-aidsh-subprocess-e2b"></a>
+<a id="vrealdsh-subprocess-e2b"></a>
 
 ## `@vreal/dsh-subprocess-e2b`
 
@@ -2385,7 +2385,7 @@ export interface Config {
 
 来源：[`packages/e2b/subprocess-e2b/src/index.ts:25`](../packages/e2b/subprocess-e2b/src/index.ts)
 
-<a id="deepseek-aidsh-system-prompt"></a>
+<a id="vrealdsh-system-prompt"></a>
 
 ## `@vreal/dsh-system-prompt`
 
@@ -2412,7 +2412,7 @@ export interface Config {
 
 来源：[`packages/core/system-prompt/src/index.ts:186`](../packages/core/system-prompt/src/index.ts)
 
-<a id="deepseek-aidsh-terminal-bash"></a>
+<a id="vrealdsh-terminal-bash"></a>
 
 ## `@vreal/dsh-terminal-bash`
 
@@ -2462,7 +2462,7 @@ export type ShellDialect = 'bash' | 'pwsh'
 
 来源：[`packages/terminal/terminal-bash/src/config.ts:10`](../packages/terminal/terminal-bash/src/config.ts)
 
-<a id="deepseek-aidsh-time-context"></a>
+<a id="vrealdsh-time-context"></a>
 
 ## `@vreal/dsh-time-context`
 
@@ -2480,7 +2480,7 @@ export interface Config {
 
 来源：[`packages/context/time-context/src/index.ts:27`](../packages/context/time-context/src/index.ts)
 
-<a id="deepseek-aidsh-tmux-context"></a>
+<a id="vrealdsh-tmux-context"></a>
 
 ## `@vreal/dsh-tmux-context`
 
@@ -2496,7 +2496,7 @@ export interface Config {
 
 来源：[`packages/context/tmux-context/src/index.ts:34`](../packages/context/tmux-context/src/index.ts)
 
-<a id="deepseek-aidsh-token-meter"></a>
+<a id="vrealdsh-token-meter"></a>
 
 ## `@vreal/dsh-token-meter`
 
@@ -2507,7 +2507,7 @@ export type TokenMeterConfig = Record<string, never>
 
 来源：[`packages/llm/token-meter/src/types.ts:12`](../packages/llm/token-meter/src/types.ts)
 
-<a id="deepseek-aidsh-tool-bash"></a>
+<a id="vrealdsh-tool-bash"></a>
 
 ## `@vreal/dsh-tool-bash`
 
@@ -2523,7 +2523,7 @@ export interface Config {
 
 来源：[`packages/shell/tool-bash/src/index.ts:34`](../packages/shell/tool-bash/src/index.ts)
 
-<a id="deepseek-aidsh-tool-bash-persistent"></a>
+<a id="vrealdsh-tool-bash-persistent"></a>
 
 ## `@vreal/dsh-tool-bash-persistent`
 
@@ -2545,7 +2545,7 @@ export interface Config {
 
 来源：[`packages/shell/tool-bash-persistent/src/index.ts:432`](../packages/shell/tool-bash-persistent/src/index.ts)
 
-<a id="deepseek-aidsh-tool-fs"></a>
+<a id="vrealdsh-tool-fs"></a>
 
 ## `@vreal/dsh-tool-fs`
 
@@ -2567,7 +2567,7 @@ export interface Config {
 
 来源：[`packages/fs/tool-fs/src/index.ts:25`](../packages/fs/tool-fs/src/index.ts)
 
-<a id="deepseek-aidsh-tool-fs-search"></a>
+<a id="vrealdsh-tool-fs-search"></a>
 
 ## `@vreal/dsh-tool-fs-search`
 
@@ -2602,7 +2602,7 @@ export interface Config {
 
 来源：[`packages/fs/tool-fs-search/src/index.ts:73`](../packages/fs/tool-fs-search/src/index.ts)
 
-<a id="deepseek-aidsh-tool-goal"></a>
+<a id="vrealdsh-tool-goal"></a>
 
 ## `@vreal/dsh-tool-goal`
 
@@ -2618,7 +2618,7 @@ export interface Config {
 
 来源：[`packages/goal/tool-goal/src/index.ts:26`](../packages/goal/tool-goal/src/index.ts)
 
-<a id="deepseek-aidsh-tool-jobs"></a>
+<a id="vrealdsh-tool-jobs"></a>
 
 ## `@vreal/dsh-tool-jobs`
 
@@ -2652,7 +2652,7 @@ export type CompletionDelivery = 'quiet' | 'wakeup'
 
 来源：[`packages/jobs/tool-jobs/src/index.ts:32`](../packages/jobs/tool-jobs/src/index.ts)
 
-<a id="deepseek-aidsh-tool-lsp"></a>
+<a id="vrealdsh-tool-lsp"></a>
 
 ## `@vreal/dsh-tool-lsp`
 
@@ -2672,7 +2672,7 @@ export interface Config {
 
 来源：[`packages/lsp/tool-lsp/src/index.ts:58`](../packages/lsp/tool-lsp/src/index.ts)
 
-<a id="deepseek-aidsh-tool-pwsh"></a>
+<a id="vrealdsh-tool-pwsh"></a>
 
 ## `@vreal/dsh-tool-pwsh`
 
@@ -2688,7 +2688,7 @@ export interface Config {
 
 来源：[`packages/shell/tool-pwsh/src/index.ts:52`](../packages/shell/tool-pwsh/src/index.ts)
 
-<a id="deepseek-aidsh-tool-pwsh-persistent"></a>
+<a id="vrealdsh-tool-pwsh-persistent"></a>
 
 ## `@vreal/dsh-tool-pwsh-persistent`
 
@@ -2710,7 +2710,7 @@ export interface Config {
 
 来源：[`packages/shell/tool-pwsh-persistent/src/index.ts:472`](../packages/shell/tool-pwsh-persistent/src/index.ts)
 
-<a id="deepseek-aidsh-tool-ralph"></a>
+<a id="vrealdsh-tool-ralph"></a>
 
 ## `@vreal/dsh-tool-ralph`
 
@@ -2732,7 +2732,7 @@ export interface Config {
 
 来源：[`packages/workflow/tool-ralph/src/index.ts:23`](../packages/workflow/tool-ralph/src/index.ts)
 
-<a id="deepseek-aidsh-tool-session-query"></a>
+<a id="vrealdsh-tool-session-query"></a>
 
 ## `@vreal/dsh-tool-session-query`
 
@@ -2750,7 +2750,7 @@ export interface Config {
 
 来源：[`packages/session-query/tool-session-query/src/index.ts:29`](../packages/session-query/tool-session-query/src/index.ts)
 
-<a id="deepseek-aidsh-tool-skill"></a>
+<a id="vrealdsh-tool-skill"></a>
 
 ## `@vreal/dsh-tool-skill`
 
@@ -2766,7 +2766,7 @@ export interface Config {
 
 来源：[`packages/skill/tool-skill/src/index.ts:61`](../packages/skill/tool-skill/src/index.ts)
 
-<a id="deepseek-aidsh-tool-str-replace-editor"></a>
+<a id="vrealdsh-tool-str-replace-editor"></a>
 
 ## `@vreal/dsh-tool-str-replace-editor`
 
@@ -2784,7 +2784,7 @@ export interface Config {
 
 来源：[`packages/fs/tool-str-replace-editor/src/index.ts:497`](../packages/fs/tool-str-replace-editor/src/index.ts)
 
-<a id="deepseek-aidsh-tool-subagent"></a>
+<a id="vrealdsh-tool-subagent"></a>
 
 ## `@vreal/dsh-tool-subagent`
 
@@ -2849,7 +2849,7 @@ export interface Config {
 
 来源：[`packages/subagent/tool-subagent/src/index.ts:29`](../packages/subagent/tool-subagent/src/index.ts)
 
-<a id="deepseek-aidsh-tool-subagent-report"></a>
+<a id="vrealdsh-tool-subagent-report"></a>
 
 ## `@vreal/dsh-tool-subagent-report`
 
@@ -2871,7 +2871,7 @@ export interface Config {
 
 来源：[`packages/subagent/tool-subagent-report/src/index.ts:27`](../packages/subagent/tool-subagent-report/src/index.ts)
 
-<a id="deepseek-aidsh-tool-terminal"></a>
+<a id="vrealdsh-tool-terminal"></a>
 
 ## `@vreal/dsh-tool-terminal`
 
@@ -2889,7 +2889,7 @@ export interface Config {
 
 来源：[`packages/terminal/tool-terminal/src/index.ts:35`](../packages/terminal/tool-terminal/src/index.ts)
 
-<a id="deepseek-aidsh-tool-todo"></a>
+<a id="vrealdsh-tool-todo"></a>
 
 ## `@vreal/dsh-tool-todo`
 
@@ -2911,7 +2911,7 @@ export interface Config {
 
 来源：[`packages/todo/tool-todo/src/index.ts:29`](../packages/todo/tool-todo/src/index.ts)
 
-<a id="deepseek-aidsh-tool-web"></a>
+<a id="vrealdsh-tool-web"></a>
 
 ## `@vreal/dsh-tool-web`
 
@@ -2939,7 +2939,7 @@ export interface Config {
 
 来源：[`packages/web/tool-web/src/index.ts:37`](../packages/web/tool-web/src/index.ts)
 
-<a id="deepseek-aidsh-tool-workflow"></a>
+<a id="vrealdsh-tool-workflow"></a>
 
 ## `@vreal/dsh-tool-workflow`
 
@@ -2957,7 +2957,7 @@ export interface Config {
 
 来源：[`packages/workflow/tool-workflow/src/index.ts:33`](../packages/workflow/tool-workflow/src/index.ts)
 
-<a id="deepseek-aidsh-tools"></a>
+<a id="vrealdsh-tools"></a>
 
 ## `@vreal/dsh-tools`
 
@@ -2993,7 +2993,7 @@ export type ToolPresentationMode = 'native' | 'code' | 'both'
 
 来源：[`packages/core/tools/src/index.ts:654`](../packages/core/tools/src/index.ts)
 
-<a id="deepseek-aidsh-typert-loader"></a>
+<a id="vrealdsh-typert-loader"></a>
 
 ## `@vreal/dsh-typert-loader`
 
@@ -3009,7 +3009,7 @@ export interface Config {
 
 来源：[`packages/typert/loader/src/index.ts:47`](../packages/typert/loader/src/index.ts)
 
-<a id="deepseek-aidsh-user-approval"></a>
+<a id="vrealdsh-user-approval"></a>
 
 ## `@vreal/dsh-user-approval`
 
@@ -3040,7 +3040,7 @@ export type ApprovalPolicy = 'ask' | 'never'
 
 来源：[`packages/interaction/user-approval/src/index.ts:177`](../packages/interaction/user-approval/src/index.ts)
 
-<a id="deepseek-aidsh-web"></a>
+<a id="vrealdsh-web"></a>
 
 ## `@vreal/dsh-web`
 
@@ -3061,7 +3061,7 @@ export interface WebRuntimeConfig {
 
 来源：[`packages/web/web/src/index.ts:55`](../packages/web/web/src/index.ts)
 
-<a id="deepseek-aidsh-web-app"></a>
+<a id="vrealdsh-web-app"></a>
 
 ## `@vreal/dsh-web-app`
 
@@ -3088,7 +3088,7 @@ export interface Config {
 
 来源：[`packages/bundle/web-app/src/index.ts:42`](../packages/bundle/web-app/src/index.ts)
 
-<a id="deepseek-aidsh-web-fetch-http"></a>
+<a id="vrealdsh-web-fetch-http"></a>
 
 ## `@vreal/dsh-web-fetch-http`
 
@@ -3114,7 +3114,7 @@ export interface Config {
 
 来源：[`packages/web/web-fetch-http/src/index.ts:34`](../packages/web/web-fetch-http/src/index.ts)
 
-<a id="deepseek-aidsh-web-search-deepseek"></a>
+<a id="vrealdsh-web-search-deepseek"></a>
 
 ## `@vreal/dsh-web-search-deepseek`
 
@@ -3142,7 +3142,7 @@ export interface Config {
 
 来源：[`packages/web/web-search-deepseek/src/index.ts:46`](../packages/web/web-search-deepseek/src/index.ts)
 
-<a id="deepseek-aidsh-web-search-exa"></a>
+<a id="vrealdsh-web-search-exa"></a>
 
 ## `@vreal/dsh-web-search-exa`
 
@@ -3166,7 +3166,7 @@ export interface Config {
 
 来源：[`packages/web/web-search-exa/src/index.ts:38`](../packages/web/web-search-exa/src/index.ts)
 
-<a id="deepseek-aidsh-web-search-perplexity"></a>
+<a id="vrealdsh-web-search-perplexity"></a>
 
 ## `@vreal/dsh-web-search-perplexity`
 
@@ -3190,7 +3190,7 @@ export interface Config {
 
 来源：[`packages/web/web-search-perplexity/src/index.ts:32`](../packages/web/web-search-perplexity/src/index.ts)
 
-<a id="deepseek-aidsh-workflow-worker-thread"></a>
+<a id="vrealdsh-workflow-worker-thread"></a>
 
 ## `@vreal/dsh-workflow-worker-thread`
 
