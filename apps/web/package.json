@@ -33,7 +33,7 @@
     "@vreal/dsh-client-web": "workspace:^",
     "@vreal/dsh-cmdline": "workspace:^",
     "@vreal/dsh-pwsh-local": "workspace:^",
-    "@types/node": "^22.0.0",
+    "@types/node": "^26.5.0",
     "@types/react": "~18.3.1",
     "@types/react-dom": "~18.3.0",
     "@vitejs/plugin-react": "^4.0.0",
