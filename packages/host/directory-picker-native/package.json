@@ -39,7 +39,7 @@
   "dependencies": {
     "@vreal/dsh-host-directory-picker": "workspace:^",
     "@vreal/dsh-native-command": "workspace:^",
-    "koffi": "^3.1.0"
+    "koffi": "^3.2.1"
   },
   "peerDependencies": {
     "@vreal/dsh-invariants": "workspace:^",
