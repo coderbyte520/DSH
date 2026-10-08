@@ -1,4 +1,4 @@
-# @deepseek-ai/dsh-subagent-fork-in-process
+# @vreal/dsh-subagent-fork-in-process
 
 English | [中文](README.zh.md)
 

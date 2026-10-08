@@ -1,13 +1,13 @@
 {
-  "name": "@deepseek-ai/dsh-spill",
-  "description": "Abstract spill storage seam (ctx.spillStore) for the DeepSeek Harness — save oversized tool text and return a retrieval locator",
+  "name": "@vreal/dsh-spill",
+  "description": "Abstract spill storage seam (ctx.spillStore) for the Vreal — save oversized tool text and return a retrieval locator",
   "version": "0.1.1-rc.2",
   "publishConfig": {
     "access": "public"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/deepseek-ai/deepseek-harness.git",
+    "url": "git+https://github.com/coderbyte520/DSH.git",
     "directory": "packages/spill/spill"
   },
   "type": "module",
@@ -32,17 +32,17 @@
   ],
   "license": "MIT",
   "peerDependencies": {
-    "@deepseek-ai/dsh-brand": "workspace:^",
-    "@deepseek-ai/dsh-invariants": "workspace:^",
-    "@deepseek-ai/dsh-llm": "workspace:^",
-    "@deepseek-ai/dsh-session": "workspace:^",
-    "@deepseek-ai/cordis": "workspace:^"
+    "@vreal/dsh-brand": "workspace:^",
+    "@vreal/dsh-invariants": "workspace:^",
+    "@vreal/dsh-llm": "workspace:^",
+    "@vreal/dsh-session": "workspace:^",
+    "@vreal/cordis": "workspace:^"
   },
   "devDependencies": {
-    "@deepseek-ai/dsh-brand": "workspace:^",
-    "@deepseek-ai/dsh-invariants": "workspace:^",
-    "@deepseek-ai/dsh-llm": "workspace:^",
-    "@deepseek-ai/dsh-session": "workspace:^",
-    "@deepseek-ai/cordis": "workspace:^"
+    "@vreal/dsh-brand": "workspace:^",
+    "@vreal/dsh-invariants": "workspace:^",
+    "@vreal/dsh-llm": "workspace:^",
+    "@vreal/dsh-session": "workspace:^",
+    "@vreal/cordis": "workspace:^"
   }
 }

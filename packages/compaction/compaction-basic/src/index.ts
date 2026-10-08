@@ -1,21 +1,21 @@
 /**
  * Basic replay-aware compaction backend.
  *
- * @module @deepseek-ai/dsh-compaction-basic
+ * @module @vreal/dsh-compaction-basic
  */
 
-import { Context } from '@deepseek-ai/cordis'
-import z from '@deepseek-ai/schemastery'
-import { CompactionEngine, ManualCompactionError } from '@deepseek-ai/dsh-compaction'
-import type { CompactionResult, CompactionTrigger } from '@deepseek-ai/dsh-compaction'
-import type { TokenMeter } from '@deepseek-ai/dsh-token-meter'
-import type { Session } from '@deepseek-ai/dsh-session'
-import { CONTEXT_WINDOW_EXCEEDED_CODE, assertNever } from '@deepseek-ai/dsh-llm'
-import type { LlmCallConfig } from '@deepseek-ai/dsh-llm'
-import type { Agent, PreStepDecision } from '@deepseek-ai/dsh-agent'
-import type { CommandId } from '@deepseek-ai/dsh-commands/brand'
+import { Context } from '@vreal/cordis'
+import z from '@vreal/schemastery'
+import { CompactionEngine, ManualCompactionError } from '@vreal/dsh-compaction'
+import type { CompactionResult, CompactionTrigger } from '@vreal/dsh-compaction'
+import type { TokenMeter } from '@vreal/dsh-token-meter'
+import type { Session } from '@vreal/dsh-session'
+import { CONTEXT_WINDOW_EXCEEDED_CODE, assertNever } from '@vreal/dsh-llm'
+import type { LlmCallConfig } from '@vreal/dsh-llm'
+import type { Agent, PreStepDecision } from '@vreal/dsh-agent'
+import type { CommandId } from '@vreal/dsh-commands/brand'
 // Type-only: makes the optional sibling service available to `ctx.get()`.
-import type {} from '@deepseek-ai/dsh-compaction-tool-result-pruner'
+import type {} from '@vreal/dsh-compaction-tool-result-pruner'
 import {
   resolveCompactSpec,
   resolveConfig,

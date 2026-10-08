@@ -1,9 +1,9 @@
 /** The package's node half: an empty host body and an explained empty invariant companion. */
 
 import { describe, expect, it } from 'vitest'
-import { Context } from '@deepseek-ai/cordis'
-import InvariantRegistry from '@deepseek-ai/dsh-invariants'
-import * as AgentPresetInvariant from '@deepseek-ai/dsh-client-ui-agent-preset/invariant'
+import { Context } from '@vreal/cordis'
+import InvariantRegistry from '@vreal/dsh-invariants'
+import * as AgentPresetInvariant from '@vreal/dsh-client-ui-agent-preset/invariant'
 
 describe('invariant companion', () => {
   it('reserves package ownership with an empty installer', async () => {
@@ -14,7 +14,7 @@ describe('invariant companion', () => {
   })
 
   it('has an empty node half', async () => {
-    const { apply } = await import('@deepseek-ai/dsh-client-ui-agent-preset')
+    const { apply } = await import('@vreal/dsh-client-ui-agent-preset')
 
     // The host body exists only so the plugin appears in the host cordis.yml;
     // every surface this package ships lives in the browser half.

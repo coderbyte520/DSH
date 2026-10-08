@@ -1,13 +1,13 @@
 {
-  "name": "@deepseek-ai/dsh-session-stats",
-  "description": "Whole-log conversation counts and wall times projection (sessionStats) for the DeepSeek Harness",
+  "name": "@vreal/dsh-session-stats",
+  "description": "Whole-log conversation counts and wall times projection (sessionStats) for the Vreal",
   "version": "0.1.1-rc.2",
   "publishConfig": {
     "access": "public"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/deepseek-ai/deepseek-harness.git",
+    "url": "git+https://github.com/coderbyte520/DSH.git",
     "directory": "packages/session/session-stats"
   },
   "type": "module",
@@ -41,22 +41,22 @@
   ],
   "license": "MIT",
   "peerDependencies": {
-    "@deepseek-ai/dsh-invariants": "workspace:^",
-    "@deepseek-ai/dsh-llm": "workspace:^",
-    "@deepseek-ai/dsh-session": "workspace:^",
-    "@deepseek-ai/dsh-session-projection": "workspace:^",
-    "@deepseek-ai/cordis": "workspace:^"
+    "@vreal/dsh-invariants": "workspace:^",
+    "@vreal/dsh-llm": "workspace:^",
+    "@vreal/dsh-session": "workspace:^",
+    "@vreal/dsh-session-projection": "workspace:^",
+    "@vreal/cordis": "workspace:^"
   },
   "dependencies": {
     "zod": "^4.4.3"
   },
   "devDependencies": {
-    "@deepseek-ai/cordis-plugin-include": "workspace:^",
-    "@deepseek-ai/cordis-plugin-loader": "workspace:^",
-    "@deepseek-ai/dsh-invariants": "workspace:^",
-    "@deepseek-ai/dsh-llm": "workspace:^",
-    "@deepseek-ai/dsh-session": "workspace:^",
-    "@deepseek-ai/dsh-session-projection": "workspace:^",
-    "@deepseek-ai/cordis": "workspace:^"
+    "@vreal/cordis-plugin-include": "workspace:^",
+    "@vreal/cordis-plugin-loader": "workspace:^",
+    "@vreal/dsh-invariants": "workspace:^",
+    "@vreal/dsh-llm": "workspace:^",
+    "@vreal/dsh-session": "workspace:^",
+    "@vreal/dsh-session-projection": "workspace:^",
+    "@vreal/cordis": "workspace:^"
   }
 }

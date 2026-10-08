@@ -7,10 +7,10 @@
  * aggregates — with zero content duplication. Host-coupled domain
  * vocabulary (message sources, events, fold shapes) lives in ./domain.ts.
  *
- * @module @deepseek-ai/dsh-goal/types
+ * @module @vreal/dsh-goal/types
  */
 
-import type { Branded } from '@deepseek-ai/dsh-brand'
+import type { Branded } from '@vreal/dsh-brand'
 
 /** Identifies one goal across its durable revisions. */
 export type GoalId = Branded<'GoalId'>
@@ -99,7 +99,7 @@ export interface GoalProjection {
   readonly updatedAt: number
 }
 
-declare module '@deepseek-ai/dsh-session-projection/types' {
+declare module '@vreal/dsh-session-projection/types' {
   interface SessionProjectionStateMap {
     goal: GoalProjection | null
   }

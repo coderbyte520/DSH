@@ -8,9 +8,9 @@
  * its bootstrap export, which constructs the system and retains the same
  * exports for this package's graph row. The plugin face only enrolls that
  * pre-existing instance by providing it as `ctx.modules`.
- * @module @deepseek-ai/dsh-client-modules/client
+ * @module @vreal/dsh-client-modules/client
  */
-import type { Context } from '@deepseek-ai/cordis'
+import type { Context } from '@vreal/cordis'
 import { ClientModuleSystem } from './system.ts'
 import { parseBootManifest } from './manifest.ts'
 import type {

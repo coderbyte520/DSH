@@ -13,10 +13,10 @@ import {
   type InputScript,
   type Scenario,
   type SnapshotSuiteOptions,
-} from '@deepseek-ai/dsh-acp-snapshot'
-import { resolvePwshPath } from '@deepseek-ai/dsh-pwsh-local'
-import { parseSessionLog } from '@deepseek-ai/dsh-llm-replay'
-import { OFFLOADED_IMAGE_TEXT } from '@deepseek-ai/dsh-llm'
+} from '@vreal/dsh-acp-snapshot'
+import { resolvePwshPath } from '@vreal/dsh-pwsh-local'
+import { parseSessionLog } from '@vreal/dsh-llm-replay'
+import { OFFLOADED_IMAGE_TEXT } from '@vreal/dsh-llm'
 
 /**
  * The acp-agent example's snapshot suite: the scenario table for

@@ -1,4 +1,4 @@
-# @deepseek-ai/dsh-settings
+# @vreal/dsh-settings
 
 [English](README.md) | 中文
 

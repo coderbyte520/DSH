@@ -1,4 +1,4 @@
-# @deepseek-ai/dsh-client-ui-brand-official
+# @vreal/dsh-client-ui-brand-official
 
 [English](README.md) | 中文
 

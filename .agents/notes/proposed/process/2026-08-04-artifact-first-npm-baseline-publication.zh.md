@@ -16,7 +16,7 @@ monorepo 中可运行的源码并不能证明发布后的包可运行。workspac
 
 发布流程以一个不可变的 release bundle（发布包集合）为边界。pack 阶段从一个确定的 Git commit 构建全部目标包、生成全部 tarball、检查 tarball 内容，并通过安装后集成测试；publish 阶段只读取这组 tarball 及其 manifest（元数据清单），禁止重建或重新 pack。
 
-目标集合只包含 `packages/*/*/package.json` 与 `apps/*/package.json` 中命名为 `@deepseek-ai/*` 的 workspace 包。根项目、`website/`、vendor、Python 与 native workspace 不属于该 NPM 基线。发现机制必须拒绝重复包名、不同基础版本、意外的 `private` 发布状态以及集合中的未知包，而不是维护另一份手工包名列表。
+目标集合只包含 `packages/*/*/package.json` 与 `apps/*/package.json` 中命名为 `@vreal/*` 的 workspace 包。根项目、`website/`、vendor、Python 与 native workspace 不属于该 NPM 基线。发现机制必须拒绝重复包名、不同基础版本、意外的 `private` 发布状态以及集合中的未知包，而不是维护另一份手工包名列表。
 
 预发布版本由包的稳定基础版本、命令启动时精确到秒的 UTC 时间戳和目标 commit 的 10 位短 SHA 组成：`<base>-<YYYYMMDDHHmmss>-<short-commit>`。dist-tag 由基础版本派生为 `dev-<base>`。例如，基础版本 `0.0.1`、时间 `2026-08-04T00:32:00Z` 和 commit `909292dd7b` 生成版本 `0.0.1-20260804003200-909292dd7b` 与 tag `dev-0.0.1`。同一 release bundle 的重试必须沿用原版本和 manifest；重新 pack 会按新的命令启动时间生成新版本。
 
@@ -56,7 +56,7 @@ PR（Pull Request） CI 不会调用 pack 命令；安装态入口探测属于�
 
 测试至少覆盖以下执行面：
 
-- `@deepseek-ai/dsh` 安装后的 `dsh --version` 与 `dsh --dump-default-config` 在普通 Node 下成功，分别覆盖静态 CLI 入口和一个动态模式入口。
+- `@vreal/dsh` 安装后的 `dsh --version` 与 `dsh --dump-default-config` 在普通 Node 下成功，分别覆盖静态 CLI 入口和一个动态模式入口。
 - 安装后的默认 `dsh` 在 PTY 中完成一次无密钥 TUI 启动，到达既定 ready 信号后由测试受控退出。这条路径必须加载真实 TUI 动态 chunk，因此缺少类似 `lib/tui-*.js` 的发布文件会使门禁失败。
 - 每个其他已发布 `bin` 都定义一个不会访问真实服务或修改用户状态的包级冒烟命令。不同 CLI 不强制共用 `--help`；测试必须运行其真实安装入口并检查约定的退出或 ready 信号。
 - Node 兼容的公开运行时入口从安装目录加载；浏览器、worker 或必须由宿主协议驱动的入口使用对应的隔离 fixture（测试前置数据），但输入仍只能是本次 tarball。
@@ -107,7 +107,7 @@ PR 与普通 push 可以运行无凭据的 pack-and-test 信号，从而在合�
 
 全量 pack、安装和启动会增加 CI 时间与工作流产物体积。实现应缓存外部依赖和 pnpm store，但不得缓存或复用目标包的已安装 workspace 输出；并行执行安全的消费方 probe 可以降低时延。
 
-把所有 tarball 都安装为临时项目的顶层依赖可能掩盖未声明的内部依赖。测试生成器应按被测应用的声明式递归闭包安装，并结合现有依赖门禁；对依赖面接近全集的 `@deepseek-ai/dsh`，仍需依靠 package manifest 与静态图检查发现未声明边。
+把所有 tarball 都安装为临时项目的顶层依赖可能掩盖未声明的内部依赖。测试生成器应按被测应用的声明式递归闭包安装，并结合现有依赖门禁；对依赖面接近全集的 `@vreal/dsh`，仍需依靠 package manifest 与静态图检查发现未声明边。
 
 不同平台的 optional dependency、native addon、PTY 与浏览器入口可能需要平台专属 probe。第一阶段至少在发布所用 Linux runner 和一个本地 macOS 路径上覆盖主 `dsh` 启动，后续矩阵按实际发布平台扩展；不能用跳过不稳定 probe 的方式把生产路径移出门禁。
 

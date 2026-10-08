@@ -1,13 +1,13 @@
 {
-  "name": "@deepseek-ai/dsh-fs-e2b",
-  "description": "E2B filesystem implementation for DeepSeek Harness",
+  "name": "@vreal/dsh-fs-e2b",
+  "description": "E2B filesystem implementation for Vreal",
   "version": "0.1.1-rc.2",
   "publishConfig": {
     "access": "public"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/deepseek-ai/deepseek-harness.git",
+    "url": "git+https://github.com/coderbyte520/DSH.git",
     "directory": "packages/e2b/fs-e2b"
   },
   "type": "module",
@@ -32,15 +32,15 @@
   ],
   "license": "MIT",
   "peerDependencies": {
-    "@deepseek-ai/dsh-e2b": "workspace:^",
-    "@deepseek-ai/dsh-fs": "workspace:^",
-    "@deepseek-ai/dsh-invariants": "workspace:^",
-    "@deepseek-ai/cordis": "workspace:^"
+    "@vreal/dsh-e2b": "workspace:^",
+    "@vreal/dsh-fs": "workspace:^",
+    "@vreal/dsh-invariants": "workspace:^",
+    "@vreal/cordis": "workspace:^"
   },
   "devDependencies": {
-    "@deepseek-ai/dsh-e2b": "workspace:^",
-    "@deepseek-ai/dsh-fs": "workspace:^",
-    "@deepseek-ai/dsh-invariants": "workspace:^",
-    "@deepseek-ai/cordis": "workspace:^"
+    "@vreal/dsh-e2b": "workspace:^",
+    "@vreal/dsh-fs": "workspace:^",
+    "@vreal/dsh-invariants": "workspace:^",
+    "@vreal/cordis": "workspace:^"
   }
 }

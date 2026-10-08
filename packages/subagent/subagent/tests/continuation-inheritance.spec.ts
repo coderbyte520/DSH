@@ -10,18 +10,18 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { Context } from '@deepseek-ai/cordis'
-import type { Agent } from '@deepseek-ai/dsh-agent'
-import AgentLoop from '@deepseek-ai/dsh-agent-loop'
-import { mountAgentLoopTestDependencies } from '@deepseek-ai/dsh-agent-loop-testkit'
-import { createUserMessage } from '@deepseek-ai/dsh-llm'
-import SandboxPolicyService, { effectiveSandboxMode, setSandboxMode } from '@deepseek-ai/dsh-sandbox-policy'
-import { SessionId } from '@deepseek-ai/dsh-session'
-import type { SessionEvent } from '@deepseek-ai/dsh-session'
-import JsonlSessionPersistence from '@deepseek-ai/dsh-session-persistence-jsonl'
-import * as SubagentFork from '@deepseek-ai/dsh-subagent-fork-in-process'
-import * as SubagentSpawn from '@deepseek-ai/dsh-subagent-spawn-in-process'
-import ApprovalService, { effectiveApprovalPolicy } from '@deepseek-ai/dsh-user-approval'
+import { Context } from '@vreal/cordis'
+import type { Agent } from '@vreal/dsh-agent'
+import AgentLoop from '@vreal/dsh-agent-loop'
+import { mountAgentLoopTestDependencies } from '@vreal/dsh-agent-loop-testkit'
+import { createUserMessage } from '@vreal/dsh-llm'
+import SandboxPolicyService, { effectiveSandboxMode, setSandboxMode } from '@vreal/dsh-sandbox-policy'
+import { SessionId } from '@vreal/dsh-session'
+import type { SessionEvent } from '@vreal/dsh-session'
+import JsonlSessionPersistence from '@vreal/dsh-session-persistence-jsonl'
+import * as SubagentFork from '@vreal/dsh-subagent-fork-in-process'
+import * as SubagentSpawn from '@vreal/dsh-subagent-spawn-in-process'
+import ApprovalService, { effectiveApprovalPolicy } from '@vreal/dsh-user-approval'
 import { MockAdapter, textResponse } from '../../../core/agent-loop/tests/mock-adapter.ts'
 import SubagentRuntime from '../src/index.ts'
 
@@ -104,7 +104,7 @@ describe('continuable policy inheritance', () => {
     const runtimeContext = loaded.events.find(
       (event): event is SessionEvent<'user/message'> => event.type === 'user/message'
         && event.data.source.kind === 'plugin'
-        && event.data.source.plugin === '@deepseek-ai/dsh-system-prompt',
+        && event.data.source.plugin === '@vreal/dsh-system-prompt',
     )
     const contextText = runtimeContext?.data.content
       .flatMap(block => block.type === 'text' ? [block.text] : [])

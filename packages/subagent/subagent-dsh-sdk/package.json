@@ -1,13 +1,13 @@
 {
-  "name": "@deepseek-ai/dsh-subagent-dsh-sdk",
-  "description": "Out-of-process SDK subagent backend: drives a child DeepSeek Harness runtime subprocess over stdio JSON-RPC through the TypeScript SDK client",
+  "name": "@vreal/dsh-subagent-dsh-sdk",
+  "description": "Out-of-process SDK subagent backend: drives a child Vreal runtime subprocess over stdio JSON-RPC through the TypeScript SDK client",
   "version": "0.1.1-rc.2",
   "publishConfig": {
     "access": "public"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/deepseek-ai/deepseek-harness.git",
+    "url": "git+https://github.com/coderbyte520/DSH.git",
     "directory": "packages/subagent/subagent-dsh-sdk"
   },
   "type": "module",
@@ -32,29 +32,29 @@
   ],
   "license": "MIT",
   "peerDependencies": {
-    "@deepseek-ai/dsh-agent": "workspace:^",
-    "@deepseek-ai/dsh-invariants": "workspace:^",
-    "@deepseek-ai/dsh-llm": "workspace:^",
-    "@deepseek-ai/dsh-sdk-client": "workspace:^",
-    "@deepseek-ai/dsh-session": "workspace:^",
-    "@deepseek-ai/dsh-subagent": "workspace:^",
-    "@deepseek-ai/dsh-subprocess": "workspace:^",
-    "@deepseek-ai/cordis": "workspace:^"
+    "@vreal/dsh-agent": "workspace:^",
+    "@vreal/dsh-invariants": "workspace:^",
+    "@vreal/dsh-llm": "workspace:^",
+    "@vreal/dsh-sdk-client": "workspace:^",
+    "@vreal/dsh-session": "workspace:^",
+    "@vreal/dsh-subagent": "workspace:^",
+    "@vreal/dsh-subprocess": "workspace:^",
+    "@vreal/cordis": "workspace:^"
   },
   "dependencies": {
-    "@deepseek-ai/schemastery": "workspace:^"
+    "@vreal/schemastery": "workspace:^"
   },
   "devDependencies": {
-    "@deepseek-ai/cordis-plugin-loader": "workspace:^",
-    "@deepseek-ai/dsh-agent": "workspace:^",
-    "@deepseek-ai/dsh-invariants": "workspace:^",
-    "@deepseek-ai/dsh-llm": "workspace:^",
-    "@deepseek-ai/dsh-loader-smoke": "workspace:^",
-    "@deepseek-ai/dsh-sdk-client": "workspace:^",
-    "@deepseek-ai/dsh-sdk-protocol": "workspace:^",
-    "@deepseek-ai/dsh-session": "workspace:^",
-    "@deepseek-ai/dsh-subagent": "workspace:^",
-    "@deepseek-ai/dsh-subprocess": "workspace:^",
-    "@deepseek-ai/cordis": "workspace:^"
+    "@vreal/cordis-plugin-loader": "workspace:^",
+    "@vreal/dsh-agent": "workspace:^",
+    "@vreal/dsh-invariants": "workspace:^",
+    "@vreal/dsh-llm": "workspace:^",
+    "@vreal/dsh-loader-smoke": "workspace:^",
+    "@vreal/dsh-sdk-client": "workspace:^",
+    "@vreal/dsh-sdk-protocol": "workspace:^",
+    "@vreal/dsh-session": "workspace:^",
+    "@vreal/dsh-subagent": "workspace:^",
+    "@vreal/dsh-subprocess": "workspace:^",
+    "@vreal/cordis": "workspace:^"
   }
 }

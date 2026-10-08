@@ -1,4 +1,4 @@
-# @deepseek-ai/dsh-tool-bash-persistent
+# @vreal/dsh-tool-bash-persistent
 
 English | [中文](README.zh.md)
 

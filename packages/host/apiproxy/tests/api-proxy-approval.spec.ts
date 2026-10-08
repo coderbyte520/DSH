@@ -7,17 +7,17 @@
  */
 
 import { describe, expect, it } from 'vitest'
-import { Context } from '@deepseek-ai/cordis'
-import AgentRegistry from '@deepseek-ai/dsh-agent'
-import type { Agent } from '@deepseek-ai/dsh-agent'
-import SessionStore from '@deepseek-ai/dsh-session'
-import SystemPrompt from '@deepseek-ai/dsh-system-prompt'
-import UserQuestionService from '@deepseek-ai/dsh-user-questions'
-import ApprovalService from '@deepseek-ai/dsh-user-approval'
-import type { ApprovalRequestId } from '@deepseek-ai/dsh-user-approval'
-import type { ApiProxy, MuxFrame, RpcRequest } from '@deepseek-ai/dsh-host-apiproxy/api'
-import type { RpcId } from '@deepseek-ai/dsh-host-apiproxy/api/rpc'
-import { RpcId as mintRpcId } from '@deepseek-ai/dsh-host-apiproxy/api/rpc'
+import { Context } from '@vreal/cordis'
+import AgentRegistry from '@vreal/dsh-agent'
+import type { Agent } from '@vreal/dsh-agent'
+import SessionStore from '@vreal/dsh-session'
+import SystemPrompt from '@vreal/dsh-system-prompt'
+import UserQuestionService from '@vreal/dsh-user-questions'
+import ApprovalService from '@vreal/dsh-user-approval'
+import type { ApprovalRequestId } from '@vreal/dsh-user-approval'
+import type { ApiProxy, MuxFrame, RpcRequest } from '@vreal/dsh-host-apiproxy/api'
+import type { RpcId } from '@vreal/dsh-host-apiproxy/api/rpc'
+import { RpcId as mintRpcId } from '@vreal/dsh-host-apiproxy/api/rpc'
 import { createApiProxy } from '../src/api-proxy.ts'
 
 async function harness(): Promise<{ ctx: Context; api: ApiProxy }> {

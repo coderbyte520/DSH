@@ -1,8 +1,8 @@
-import type { Context } from '@deepseek-ai/cordis'
+import type { Context } from '@vreal/cordis'
 import type {
   ConversationNodeDefinition, ConversationPreviousContext,
-} from '@deepseek-ai/dsh-client-runtime/client'
-import type { InboxTarget } from '@deepseek-ai/dsh-agent/types'
+} from '@vreal/dsh-client-runtime/client'
+import type { InboxTarget } from '@vreal/dsh-agent/types'
 
 interface InboxIdentity {
   readonly id: string

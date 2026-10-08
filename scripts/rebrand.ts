@@ -4,11 +4,11 @@
  * legally required identifiers.
  *
  * What changes:
- * - `@deepseek-ai/` npm scope → `NEW_SCOPE/` (package.json names, imports,
+ * - `@vreal/` npm scope → `NEW_SCOPE/` (package.json names, imports,
  *   peer deps, docs, cordis manifests — everywhere the token appears).
- * - `github.com/deepseek-ai/deepseek-harness` → the new repository URL.
- * - The product display name `DeepSeek Harness` → `NEW_PRODUCT`.
- * - The company display name `DeepSeek AI` → `NEW_ORG_DISPLAY`.
+ * - `github.com/coderbyte520/DSH` → the new repository URL.
+ * - The product display name `Vreal` → `NEW_PRODUCT`.
+ * - The company display name `Vreal` → `NEW_ORG_DISPLAY`.
  *
  * What is deliberately NOT touched (functional or legal):
  * - `LICENSE` — MIT requires the original `Copyright (c) 2026 DeepSeek` notice
@@ -32,30 +32,29 @@
  * (idempotent). Configuration lives in the CONFIG object below.
  */
 
-import { readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs'
+import { readdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join, relative, resolve } from 'node:path'
-import { fileURLToPath } from 'node:url'
 
 const root = resolve(import.meta.dirname, '..')
 
 /** Fill these in before running with --apply. */
 const CONFIG = {
   /** New npm scope, e.g. '@your-org'. */
-  NEW_SCOPE: '@your-org',
+  NEW_SCOPE: '@vreal',
   /** New repository URL path, e.g. 'github.com/your-org/your-repo' (no protocol). */
-  NEW_REPO_URL: 'github.com/your-org/your-repo',
-  /** New product display name replacing "DeepSeek Harness". */
-  NEW_PRODUCT: 'Your Harness',
-  /** New org display name replacing "DeepSeek AI" (author/developer mentions). */
-  NEW_ORG_DISPLAY: 'Your Org',
+  NEW_REPO_URL: 'github.com/coderbyte520/DSH',
+  /** New product display name replacing "Vreal". */
+  NEW_PRODUCT: 'Vreal',
+  /** New org display name replacing "Vreal" (author/developer mentions). */
+  NEW_ORG_DISPLAY: 'Vreal',
 } as const
 
 /** Ordered rewrite rules; each is a plain substring replacement. */
 const RULES = [
-  { id: 'repo-url', find: 'github.com/deepseek-ai/deepseek-harness', replace: CONFIG.NEW_REPO_URL },
-  { id: 'product-name', find: 'DeepSeek Harness', replace: CONFIG.NEW_PRODUCT },
-  { id: 'org-display', find: 'DeepSeek AI', replace: CONFIG.NEW_ORG_DISPLAY },
-  { id: 'npm-scope', find: '@deepseek-ai/', replace: `${CONFIG.NEW_SCOPE}/` },
+  { id: 'repo-url', find: 'github.com/coderbyte520/DSH', replace: CONFIG.NEW_REPO_URL },
+  { id: 'product-name', find: 'Vreal', replace: CONFIG.NEW_PRODUCT },
+  { id: 'org-display', find: 'Vreal', replace: CONFIG.NEW_ORG_DISPLAY },
+  { id: 'npm-scope', find: '@vreal/', replace: `${CONFIG.NEW_SCOPE}/` },
 ] as const
 
 /** Text file extensions eligible for rewriting. */

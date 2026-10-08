@@ -3,8 +3,8 @@
  * @module semantic-checkpoint-agent
  */
 
-import type { Context } from '@deepseek-ai/cordis'
-import type { SessionId } from '@deepseek-ai/dsh-session'
+import type { Context } from '@vreal/cordis'
+import type { SessionId } from '@vreal/dsh-session'
 
 /** Fixture plugin name. */
 export const name = 'semantic-checkpoint-agent'

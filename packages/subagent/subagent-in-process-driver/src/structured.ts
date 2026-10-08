@@ -7,13 +7,13 @@
  * Capture commits only after the authoritative `tools/result` succeeds; Code Mode capture also
  * waits for the enclosing `run_code` result. The terminal result marker and monotonic tool
  * guard prevent later calls from reopening a completed structured run.
- * @module @deepseek-ai/dsh-subagent-in-process-driver/structured
+ * @module @vreal/dsh-subagent-in-process-driver/structured
  */
 
-import type { Context } from '@deepseek-ai/cordis'
-import type { ToolSchema } from '@deepseek-ai/dsh-llm'
-import type { ToolExecution, ToolRunContext } from '@deepseek-ai/dsh-tools'
-import { ToolArgsError, validateJsonSchemaValue, type ObjectJsonSchema } from '@deepseek-ai/dsh-tools'
+import type { Context } from '@vreal/cordis'
+import type { ToolSchema } from '@vreal/dsh-llm'
+import type { ToolExecution, ToolRunContext } from '@vreal/dsh-tools'
+import { ToolArgsError, validateJsonSchemaValue, type ObjectJsonSchema } from '@vreal/dsh-tools'
 
 /** The model-facing tool name a structured child must call to finish. */
 export const STRUCTURED_OUTPUT_TOOL = 'structured_output'

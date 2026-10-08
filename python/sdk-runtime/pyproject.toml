@@ -5,17 +5,17 @@ build-backend = "hatchling.build"
 [project]
 name = "deepseek-harness-runtime-bin"
 version = "0.0.0.dev0"
-description = "Pinned DeepSeek Harness runtime for the Python SDK"
+description = "Pinned Vreal runtime for the Python SDK"
 readme = "README.md"
 requires-python = ">=3.10"
 license = "MIT"
 authors = [{ name = "DeepSeek" }]
 
 [project.urls]
-Homepage = "https://github.com/deepseek-ai/deepseek-harness"
-Documentation = "https://github.com/deepseek-ai/deepseek-harness/blob/master/python/sdk-runtime/README.md"
-Issues = "https://github.com/deepseek-ai/deepseek-harness/issues"
-Source = "https://github.com/deepseek-ai/deepseek-harness"
+Homepage = "https://github.com/coderbyte520/DSH"
+Documentation = "https://github.com/coderbyte520/DSH/blob/master/python/sdk-runtime/README.md"
+Issues = "https://github.com/coderbyte520/DSH/issues"
+Source = "https://github.com/coderbyte520/DSH"
 
 # Include the injected executable and default config; exclude the dev-only node
 # closure from wheels and sdists.

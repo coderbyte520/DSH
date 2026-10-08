@@ -5,18 +5,18 @@
  * the registry itself while plugins can register additional, enumerable facts
  * with effect-scoped disposal.
  *
- * @module @deepseek-ai/dsh-shell-env
+ * @module @vreal/dsh-shell-env
  */
 
-import { Service, type Context } from '@deepseek-ai/cordis'
-import z from '@deepseek-ai/schemastery'
-import { DSH_ENV_PREFIX } from '@deepseek-ai/dsh-shell'
-import type { DshEnvironment, DshEnvironmentKey } from '@deepseek-ai/dsh-shell'
-import { DSH_HOME_ENV, resolveDshHome } from '@deepseek-ai/dsh-home-paths'
-import type { ToolExecution } from '@deepseek-ai/dsh-tools'
-import type {} from '@deepseek-ai/dsh-session-persistence'
+import { Service, type Context } from '@vreal/cordis'
+import z from '@vreal/schemastery'
+import { DSH_ENV_PREFIX } from '@vreal/dsh-shell'
+import type { DshEnvironment, DshEnvironmentKey } from '@vreal/dsh-shell'
+import { DSH_HOME_ENV, resolveDshHome } from '@vreal/dsh-home-paths'
+import type { ToolExecution } from '@vreal/dsh-tools'
+import type {} from '@vreal/dsh-session-persistence'
 
-declare module '@deepseek-ai/cordis' {
+declare module '@vreal/cordis' {
   interface Context {
     shellEnv: ShellEnvRegistry
   }
@@ -27,7 +27,7 @@ export const inject: string[] = []
 
 /** Plugin config (all optional — the built-in facts resolve without defaults). */
 export interface Config {
-  /** DeepSeek Harness home directory exposed as `DSH_HOME`; defaults to `$DSH_HOME` or `~/.dsh`. */
+  /** Vreal home directory exposed as `DSH_HOME`; defaults to `$DSH_HOME` or `~/.dsh`. */
   dshHome?: string
 }
 

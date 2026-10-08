@@ -1,4 +1,4 @@
-# @deepseek-ai/dsh-tool-ralph
+# @vreal/dsh-tool-ralph
 
 [English](README.md) | 中文
 

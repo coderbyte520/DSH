@@ -1,4 +1,4 @@
-# @deepseek-ai/dsh-client-locale
+# @vreal/dsh-client-locale
 
 English | [中文](README.zh.md)
 

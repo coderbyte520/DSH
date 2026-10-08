@@ -1,13 +1,13 @@
 {
-  "name": "@deepseek-ai/dsh-web-frontend",
-  "description": "Web application entry: vite build over the @deepseek-ai/dsh-client-web shell library; dist/ served by apps/cli's dsh web",
+  "name": "@vreal/dsh-web-frontend",
+  "description": "Web application entry: vite build over the @vreal/dsh-client-web shell library; dist/ served by apps/cli's dsh web",
   "version": "0.1.1-rc.2",
   "publishConfig": {
     "access": "public"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/deepseek-ai/deepseek-harness.git",
+    "url": "git+https://github.com/coderbyte520/DSH.git",
     "directory": "apps/web"
   },
   "type": "module",
@@ -26,13 +26,13 @@
   },
   "license": "MIT",
   "devDependencies": {
-    "@deepseek-ai/cordis-plugin-group": "workspace:^",
-    "@deepseek-ai/dsh-client-modules": "workspace:^",
-    "@deepseek-ai/dsh-client-ui-primitives": "workspace:^",
-    "@deepseek-ai/dsh-client-ui-slots": "workspace:^",
-    "@deepseek-ai/dsh-client-web": "workspace:^",
-    "@deepseek-ai/dsh-cmdline": "workspace:^",
-    "@deepseek-ai/dsh-pwsh-local": "workspace:^",
+    "@vreal/cordis-plugin-group": "workspace:^",
+    "@vreal/dsh-client-modules": "workspace:^",
+    "@vreal/dsh-client-ui-primitives": "workspace:^",
+    "@vreal/dsh-client-ui-slots": "workspace:^",
+    "@vreal/dsh-client-web": "workspace:^",
+    "@vreal/dsh-cmdline": "workspace:^",
+    "@vreal/dsh-pwsh-local": "workspace:^",
     "@types/node": "^22.0.0",
     "@types/react": "~18.3.1",
     "@types/react-dom": "~18.3.0",

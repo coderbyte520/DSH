@@ -1,4 +1,4 @@
-# `@deepseek-ai/dsh-headless`
+# `@vreal/dsh-headless`
 
 [English](README.md) | 中文
 

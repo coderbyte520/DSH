@@ -1,4 +1,4 @@
-# @deepseek-ai/dsh-tool-pwsh-persistent
+# @vreal/dsh-tool-pwsh-persistent
 
 [English](README.md) | 中文
 

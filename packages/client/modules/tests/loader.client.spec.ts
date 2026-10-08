@@ -7,7 +7,7 @@
  * default transport hook, and the loud failure modes (duplicate
  * registration, cycles, table misses, double boot).
  */
-import { Context } from '@deepseek-ai/cordis'
+import { Context } from '@vreal/cordis'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   apply, createClientModuleSystem, parseBootManifest,
@@ -15,7 +15,7 @@ import {
   type ClientModuleLoader, type ClientModuleLoaderTarget, type DshWindow,
 } from '../src/client/index.ts'
 
-const MODULES_ID = '@deepseek-ai/dsh-client-modules'
+const MODULES_ID = '@vreal/dsh-client-modules'
 const win = globalThis as DshWindow
 const bootstrapExports = { apply, createClientModuleSystem }
 

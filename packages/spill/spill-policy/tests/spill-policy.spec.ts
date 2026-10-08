@@ -9,19 +9,19 @@
  */
 
 import { describe, expect, it, vi } from 'vitest'
-import { Context } from '@deepseek-ai/cordis'
-import Loader from '@deepseek-ai/cordis-plugin-loader'
-import { createUserMessage, CallId } from '@deepseek-ai/dsh-llm'
-import type { ContentBlock } from '@deepseek-ai/dsh-llm'
-import { SessionId } from '@deepseek-ai/dsh-session'
-import SystemPrompt from '@deepseek-ai/dsh-system-prompt'
-import ToolRuntime, { defineContentToolFixture } from '@deepseek-ai/dsh-tools'
-import type { ToolDefinition } from '@deepseek-ai/dsh-tools'
-import type { PostToolDecision, ToolExecution, ToolExecutionToken } from '@deepseek-ai/dsh-tools'
-import { SpillLocator, SpillStore } from '@deepseek-ai/dsh-spill'
-import type { SaveTextSpill, SpillRef } from '@deepseek-ai/dsh-spill'
-import * as SpillPolicy from '@deepseek-ai/dsh-spill-policy'
-import { WorkerThreadCodeRuntime } from '@deepseek-ai/dsh-code-runtime-worker-thread'
+import { Context } from '@vreal/cordis'
+import Loader from '@vreal/cordis-plugin-loader'
+import { createUserMessage, CallId } from '@vreal/dsh-llm'
+import type { ContentBlock } from '@vreal/dsh-llm'
+import { SessionId } from '@vreal/dsh-session'
+import SystemPrompt from '@vreal/dsh-system-prompt'
+import ToolRuntime, { defineContentToolFixture } from '@vreal/dsh-tools'
+import type { ToolDefinition } from '@vreal/dsh-tools'
+import type { PostToolDecision, ToolExecution, ToolExecutionToken } from '@vreal/dsh-tools'
+import { SpillLocator, SpillStore } from '@vreal/dsh-spill'
+import type { SaveTextSpill, SpillRef } from '@vreal/dsh-spill'
+import * as SpillPolicy from '@vreal/dsh-spill-policy'
+import { WorkerThreadCodeRuntime } from '@vreal/dsh-code-runtime-worker-thread'
 
 const testToolSignal = new AbortController().signal
 

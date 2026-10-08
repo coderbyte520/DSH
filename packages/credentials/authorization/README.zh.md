@@ -13,9 +13,9 @@
 ## 接口
 
 ```ts
-import type { Context } from '@deepseek-ai/cordis'
-import { AuthorizationDeclinedError, type AuthorizationSession } from '@deepseek-ai/dsh-authorization'
-import { credentialKey } from '@deepseek-ai/dsh-credentials'
+import type { Context } from '@vreal/cordis'
+import { AuthorizationDeclinedError, type AuthorizationSession } from '@vreal/dsh-authorization'
+import { credentialKey } from '@vreal/dsh-credentials'
 
 declare const ctx: Context
 declare const exchange: (signal: AbortSignal) => Promise<void>

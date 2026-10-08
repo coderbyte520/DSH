@@ -1,4 +1,4 @@
-# @deepseek-ai/dsh-client-ui-message-feedback
+# @vreal/dsh-client-ui-message-feedback
 
 [English](README.md) | 中文
 
