@@ -35,6 +35,7 @@
 | `@vreal/dsh-schedule` | `schedule_create`、`schedule_delete`、`schedule_list` | `ctx.tools`、`ctx.sessions`、Session 持久化、未来创建的 live 根 Agent | `tool/call`、`schedule/change create or delete`、`tool/result` | - | 仅在选择启用的 Schedule 插件加载后创建的 live 根 Agent scope 内注册。版本 1 接受 after_seconds、显式绝对 at 和有界固定速率 every_seconds，并披露 session-local 交付；管理读取与变更必须通过共享的 Session 持久化 barrier。 |
 | `@vreal/dsh-tool-lsp` | `lsp` | `ctx.tools`、`ctx.lsp`、`ctx.systemPrompt` | `tool/call`、`tool/result` | - | lsp 工具将提供方选择和语言服务器子进程置于 ctx.lsp 之后，因此其模型可见 schema 在更换提供方时保持稳定。运行时要求已注册提供方，例如 `@vreal/dsh-lsp-stdio`；如果没有提供方，查询会返回结构化 `LSP_UNAVAILABLE` 错误，而不会改变 schema。 |
 | `@vreal/dsh-tool-ralph` | `ralph` | `ctx.tools`、`ctx.workflowEngine`、`ctx.subagents`、`ctx.systemPrompt`、`a calling Agent (exec.agent parents every fresh round)` | `tool/call`、`tool/result`、`workflow and child session events during execution` | - | 固定的前台工作流会在每个 Round 启动一个全新的结构化子级；模型只能选择不可变目标和可选的 Round 上限。 |
+| `@vreal/dsh-tool-ralph-evaluated` | `ralph_evaluated` | `ctx.tools`、`ctx.workflowEngine`、`ctx.subagents`、`ctx.systemPrompt`、`a calling Agent (exec.agent parents every fresh worker and evaluator round)` | `tool/call`、`tool/result`、`workflow and child session events during execution` | - | 固定的前台工作流会在每个 Round 启动一个全新的结构化 worker 加一个全新的结构化 evaluator；完成、继续或阻塞由 evaluator 而非 worker 判定。 |
 | `@vreal/dsh-tool-skill` | `skill` | `ctx.tools`、`ctx.agents`、`ctx.skills` | `tool/call`、`tool/result`、`user/message replacement catalogs via agent.inject()` | - | - |
 | `@vreal/dsh-tool-session-query` | `session_event_read`、`session_event_search`、`session_event_trace`、`session_search`、`session_trace` | `ctx.tools`、`ctx.systemPrompt`、`ctx.sessionQuery`、`a calling Agent for workspace authority` | `tool/call`、`tool/result` | - | 这 5 个只读工具会隐藏提供方游标，并根据不可变的调用 agent 会话为每个结果授权。该包需要选择启用；需要强制截止时间或限制行内输出的组合还会挂载通用超时或 spill 策略。 |
 | `@vreal/dsh-tool-subagent` | `subagent` | `ctx.tools`、`ctx.subagents`、`ctx.systemPrompt` | `tool/call`、`tool/result`、`child session events through the chosen provider` | `subagent`、`subagent_fork` | 注册的工具名称取决于加载时 `toolName` 配置（默认为 `subagent`）；上述 schema 对应默认值。随产品发布的组合会为每个 subagent 后端加载一次该包，因此模型还会看到绑定到 fork 后端的 `subagent_fork`。每个实例的描述、`run_in_background` 参数与 system prompt 策略取决于它自己的 `backgroundMode` 和 `enableRunInBackground`，因此两个随附 schema 并不相同：`subagent` 为 `continuable`，省略参数时默认后台运行，并由 runtime 自动投递结束结果；`subagent_fork` 保持 `one-shot`，省略参数时默认前台运行。详见 `packages/bundle/base/cordis.patch.yml` 和 `examples/acp-agent/cordis.yml`。 |
@@ -1242,6 +1243,37 @@ lsp 工具将提供方选择和语言服务器子进程置于 ctx.lsp 之后，�
 来源：[`packages/workflow/tool-ralph/src/index.ts`](../packages/workflow/tool-ralph/src/index.ts)
 
 固定的前台工作流会在每个 Round 启动一个全新的结构化子级；模型只能选择不可变目标和可选的 Round 上限。
+
+<a id="vrealdsh-tool-ralph-evaluated"></a>
+
+## `@vreal/dsh-tool-ralph-evaluated`
+
+### `ralph_evaluated`
+
+围绕一个不可变目标运行带独立验证的前台全新 agent Ralph 循环。仅当直接人类明确要求 evaluated Ralph 循环或带独立验证的全新 agent 迭代时使用。每个 Round 都会启动一个全新 worker 子级和一个全新 evaluator 子级，两者都看不到父级对话；worker 报告进度与证据，独立 evaluator 对照共享工作区验证这些证据，并独自判定目标是已完成、循环应继续、还是被阻塞。当 evaluator 给出判定或达到 Round 上限时，调用返回。普通的长期同会话工作应使用 goal 工具。
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "objective": {
+      "type": "string",
+      "description": "The immutable completion objective for every fresh worker and evaluator round."
+    },
+    "maxRounds": {
+      "type": "number",
+      "description": "Optional positive safe-integer round cap, bounded by the deployment ceiling."
+    }
+  },
+  "required": [
+    "objective"
+  ]
+}
+```
+
+来源：[`packages/workflow/tool-ralph-evaluated/src/index.ts`](../packages/workflow/tool-ralph-evaluated/src/index.ts)
+
+固定的前台工作流会在每个 Round 启动一个全新的结构化 worker 加一个全新的结构化 evaluator；完成、继续或阻塞由 evaluator 而非 worker 判定。
 
 <a id="vrealdsh-tool-skill"></a>
 

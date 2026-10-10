@@ -31,6 +31,7 @@ This table connects model-visible tool names to the plugin package and service s
 | `@vreal/dsh-schedule` | `schedule_create`, `schedule_delete`, `schedule_list` | `ctx.tools`, `ctx.sessions`, `Session persistence`, `a future live root Agent` | `tool/call`, `schedule/change create or delete`, `tool/result` | - | Registered only inside live root Agent scopes created after the opt-in Schedule plugin loads. Version 1 accepts after_seconds, explicit absolute at, and bounded fixed-rate every_seconds, and discloses session-local delivery; management reads and mutations require the shared Session persistence barrier. |
 | `@vreal/dsh-tool-lsp` | `lsp` | `ctx.tools`, `ctx.lsp`, `ctx.systemPrompt` | `tool/call`, `tool/result` | - | The lsp tool keeps provider selection and language-server subprocesses behind ctx.lsp, so its model-visible schema stays stable across providers. Requires a registered provider (e.g. `@vreal/dsh-lsp-stdio`) at runtime; without one, a query returns the structured `LSP_UNAVAILABLE` error rather than changing the schema. |
 | `@vreal/dsh-tool-ralph` | `ralph` | `ctx.tools`, `ctx.workflowEngine`, `ctx.subagents`, `ctx.systemPrompt`, `a calling Agent (exec.agent parents every fresh round)` | `tool/call`, `tool/result`, `workflow and child session events during execution` | - | A fixed foreground workflow starts one fresh structured child per round; the model selects only the immutable objective and an optional round cap. |
+| `@vreal/dsh-tool-ralph-evaluated` | `ralph_evaluated` | `ctx.tools`, `ctx.workflowEngine`, `ctx.subagents`, `ctx.systemPrompt`, `a calling Agent (exec.agent parents every fresh worker and evaluator round)` | `tool/call`, `tool/result`, `workflow and child session events during execution` | - | A fixed foreground workflow starts one fresh structured worker plus one fresh structured evaluator per round; the evaluator, not the worker, decides completion, continuation, or blockage. |
 | `@vreal/dsh-tool-skill` | `skill` | `ctx.tools`, `ctx.agents`, `ctx.skills` | `tool/call`, `tool/result`, `user/message replacement catalogs via agent.inject()` | - | - |
 | `@vreal/dsh-tool-session-query` | `session_event_read`, `session_event_search`, `session_event_trace`, `session_search`, `session_trace` | `ctx.tools`, `ctx.systemPrompt`, `ctx.sessionQuery`, `a calling Agent for workspace authority` | `tool/call`, `tool/result` | - | The five read-only tools hide provider cursors and authorize every result from the immutable calling agent session. The package is opt-in; compositions that need enforced deadlines or bounded inline output also mount the generic timeout or spill policies. |
 | `@vreal/dsh-tool-subagent` | `subagent` | `ctx.tools`, `ctx.subagents`, `ctx.systemPrompt` | `tool/call`, `tool/result`, `child session events through the chosen provider` | `subagent`, `subagent_fork` | The registered tool name is the load-time `toolName` config (default `subagent`); the schema above is that default. The shipped compositions load this package once per subagent backend, so the model additionally sees `subagent_fork` bound to the fork backend. Each instance's description, `run_in_background` parameter, and system-prompt policy follow its own `backgroundMode` and `enableRunInBackground`, so the two shipped schemas are not identical: `subagent` is `continuable` and defaults omitted calls to background with automatic settlement delivery, while `subagent_fork` stays `one-shot` and defaults them to foreground — see `packages/bundle/base/cordis.patch.yml` and `examples/acp-agent/cordis.yml`. |
@@ -1236,6 +1237,37 @@ Run a foreground fresh-agent Ralph loop toward one immutable objective. Use only
 Source: [`packages/workflow/tool-ralph/src/index.ts`](../packages/workflow/tool-ralph/src/index.ts)
 
 A fixed foreground workflow starts one fresh structured child per round; the model selects only the immutable objective and an optional round cap.
+
+<a id="vrealdsh-tool-ralph-evaluated"></a>
+
+## `@vreal/dsh-tool-ralph-evaluated`
+
+### `ralph_evaluated`
+
+Run a foreground evaluated fresh-agent Ralph loop toward one immutable objective. Use only when the direct human explicitly asks for an evaluated Ralph loop or fresh-agent iteration with independent verification. Each round opens a fresh worker child and a fresh evaluator child, neither seeded with parent conversation; the worker reports progress and evidence, and the independent evaluator verifies that evidence against the shared workspace and alone decides whether the objective is complete, the loop should continue, or it is blocked. The call returns when the evaluator issues its verdict, or at the round limit. Ordinary long-running same-session work belongs to goal tools.
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "objective": {
+      "type": "string",
+      "description": "The immutable completion objective for every fresh worker and evaluator round."
+    },
+    "maxRounds": {
+      "type": "number",
+      "description": "Optional positive safe-integer round cap, bounded by the deployment ceiling."
+    }
+  },
+  "required": [
+    "objective"
+  ]
+}
+```
+
+Source: [`packages/workflow/tool-ralph-evaluated/src/index.ts`](../packages/workflow/tool-ralph-evaluated/src/index.ts)
+
+A fixed foreground workflow starts one fresh structured worker plus one fresh structured evaluator per round; the evaluator, not the worker, decides completion, continuation, or blockage.
 
 <a id="vrealdsh-tool-skill"></a>
 

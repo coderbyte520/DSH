@@ -381,6 +381,15 @@
         subagentProvider: spawn
         maxRounds: 64
 
+    # Fresh-agent Ralph iteration whose completion is decided by an
+    # independent evaluator child over the same build-time-fixed pattern.
+    - id: tool-ralph-evaluated
+      name: '@vreal/dsh-tool-ralph-evaluated'
+      config:
+        subagentProvider: spawn
+        maxRounds: 64
+        evaluatorModel: ''
+
     - id: tool-str-replace-editor
       name: '@vreal/dsh-tool-str-replace-editor'
       config:
