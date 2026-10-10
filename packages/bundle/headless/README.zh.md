@@ -17,4 +17,5 @@ Loader 结算后，runner 读取共享的 [`ctx.agentDefaultModel`](../../core/a
 ## 已知限制与暂缓事项
 
 - **只提交一个任务**：runner 没有用于交互式后续输入的 surface；它会等待 Agent 在返回 idle 前完成的所有工作，并打印该区间内最后一条非空 assistant 消息。
+- **不提供自动目标续跑**：runner 在 Agent 第一次静默时即退出，而续跑驱动器是在当前驱动器退休之后才预约下一个目标轮次。因此本组合包禁用 `goal-round-driver`：持久化目标领域与模型工具仍然可用，自动轮次属于长驻 surface（`dsh web`，或保持进程存活的自定义组合）。
 - **`ctx.appExit` 由启动器持有**：在 `dsh` 启动器之外启动 headless profile 会在激活时明确报错，直到宿主提供该退出请求。
