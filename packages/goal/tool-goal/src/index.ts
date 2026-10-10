@@ -19,6 +19,8 @@ import {
 } from './authority.ts'
 import { renderWrapupContext } from './wrapup.ts'
 
+export { peekTerminalAuthority } from './authority.ts'
+
 export const name = 'tool-goal'
 export const inject = ['agents', 'goals', 'tools', 'systemPrompt']
 

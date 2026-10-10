@@ -6,7 +6,7 @@ English | [中文](2026-10-09-evaluated-ralph-independent-evaluator-loop.zh.md)
 
 ## Problem
 
-The fresh-agent Ralph tool iterates toward one objective, but completion and blockage are worker self-declarations: the same child that performed the work decides the loop is finished, and the tool envelope says so. The same gap is the first deferred item of the same-session goal round driver. Before wiring evaluator certification into goal lifecycle — which touches durable state, revisions, and continuation policy — the harness needs evidence that an independent evaluator actually improves loop outcomes, at a cost and risk that a removable PoC can establish.
+The fresh-agent Ralph tool iterates toward one objective, but completion and blockage are worker self-declarations: the same child that performed the work decides the loop is finished, and the tool envelope says so. The same gap also applied to the same-session goal round driver, whose certification later shipped as the separate [goal-round completion certification](2026-10-10-goal-round-completion-certification.md) consumer. Before wiring evaluator certification into goal lifecycle — which touches durable state, revisions, and continuation policy — the harness needs evidence that an independent evaluator actually improves loop outcomes, at a cost and risk that a removable PoC can establish.
 
 External-agent providers (`claude-code`, `codex`) report no start-time capabilities, so they cannot return a structured verdict today; they are also dormant Profile Bundles in shipped compositions. Any evaluator PoC that wants structured output must run over an in-process provider.
 
@@ -55,4 +55,4 @@ Unit tests clone the `ralph` suite's StubEngine/StubProvider boundary: config an
 - The evaluator is a same-kind child unless `evaluatorModel` overrides it; cross-family verification waits on external providers supporting structured output.
 - Evaluator verdicts remain model judgment, not mechanically certified proof: the evaluator is told to verify against the workspace, but nothing forces it to run checks beyond its own discretion.
 - Foreground only, workspace-only cross-round memory, no within-round fan-out, no retry, and no token/price/time budgets — all inherited from the `ralph` pattern and equally deferred.
-- Goal-domain integration (certified goal-round completion in `goal-round-driver`) is the intended next step and is not part of this PoC.
+- Goal-domain integration shipped outside this PoC: [`@vreal/dsh-goal-evaluator`](../../../../packages/goal/goal-evaluator/README.md) certifies terminal `update_goal` claims over the goal tools and reuses this PoC's verdict vocabulary.

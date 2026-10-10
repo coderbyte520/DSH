@@ -33,6 +33,7 @@
     "@vreal/dsh-fs-observation-policy": "workspace:*",
     "@vreal/dsh-fs-sandbox": "workspace:^",
     "@vreal/dsh-goal": "workspace:*",
+    "@vreal/dsh-goal-evaluator": "workspace:*",
     "@vreal/dsh-goal-round-driver": "workspace:*",
     "@vreal/dsh-hooks-claude-code": "workspace:*",
     "@vreal/dsh-hooks-codex": "workspace:*",

@@ -44,10 +44,10 @@ function openTurn(agent: Agent): { start: TurnStartEvent; events: readonly Sessi
 /**
  * Resolve and authenticate the calling agent and its driver boundary.
  * @param ctx - Context carrying the live agent registry.
- * @param exec - Tool execution metadata supplied by the registry.
+ * @param exec - Tool execution metadata supplying the calling agent.
  * @returns The authenticated agent and its current turn window.
  */
-export function goalToolExecution(ctx: Context, exec: ToolRunContext): GoalToolExecution {
+export function goalToolExecution(ctx: Context, exec: Pick<ToolRunContext, 'agent'>): GoalToolExecution {
   const agent = exec.agent
   if (agent === undefined) {
     return reject('goal tools require a calling agent', 'GOAL_TOOL_AGENT_REQUIRED')
@@ -99,10 +99,38 @@ export function requireDirectHuman(ctx: Context, execution: GoalToolExecution): 
  * @returns The direct-human or exact-goal-round authority grant.
  */
 export function completionAuthority(ctx: Context, execution: GoalToolExecution): GoalToolAuthority {
+  const authority = peekTerminalAuthority(ctx, execution)
+  if (authority !== undefined) return authority
+  reject('complete and blocked require a direct human turn or the current goal round')
+}
+
+/**
+ * Resolve completion authority without rejecting. Policy consumers wrapping
+ * `update_goal` use this to decide whether a terminal claim needs evaluation:
+ * an undefined result delegates to the tool body, which produces its own
+ * authority rejection.
+ * @param ctx - Context carrying live agents and goal state.
+ * @param exec - Tool execution metadata supplying the calling agent.
+ * @returns The authority grant, or undefined when the call carries none or is
+ *   not an authenticated live goal-tool execution.
+ */
+export function peekTerminalAuthority(
+  ctx: Context,
+  exec: Pick<ToolRunContext, 'agent'>,
+): GoalToolAuthority | undefined {
+  let execution: GoalToolExecution
+  try {
+    execution = goalToolExecution(ctx, exec)
+  } catch {
+    // goalToolExecution rejects calls without an authenticated live agent turn;
+    // nothing else can reach this catch, and the wrapper delegates so the tool
+    // body produces that rejection itself.
+    return undefined
+  }
   if (hasDirectHumanInput(ctx, execution)) return { kind: 'direct-human' }
   const goal = ctx.goals.get(execution.agent)
   if (goal !== undefined && isMatchingGoalRound(execution, goal)) {
     return { kind: 'goal-round', goal }
   }
-  return reject('complete and blocked require a direct human turn or the current goal round')
+  return undefined
 }

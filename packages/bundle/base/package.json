@@ -96,6 +96,7 @@
     "@vreal/dsh-tool-fs": "workspace:^",
     "@vreal/dsh-tool-fs-search": "workspace:^",
     "@vreal/dsh-tool-goal": "workspace:^",
+    "@vreal/dsh-goal-evaluator": "workspace:^",
     "@vreal/dsh-tool-pwsh": "workspace:^",
     "@vreal/dsh-tool-ralph": "workspace:^",
     "@vreal/dsh-tool-ralph-evaluated": "workspace:^",

@@ -8,6 +8,7 @@ Durable objective state for an agent session, owned independently of the model-f
 |---|---|---|
 | [`goal/`](goal/README.md) | Goal state and lifecycle | `ctx.goals` |
 | [`goal-round-driver/`](goal-round-driver/README.md) | Same-session goal continuation | — |
+| [`goal-evaluator/`](goal-evaluator/README.md) | Independent certification of terminal goal-round claims | — |
 | [`tool-goal/`](tool-goal/README.md) | Model-facing goal tools | — |
 | [`command-goal/`](command-goal/README.md) | Human-facing goal command | — |
 

@@ -374,6 +374,14 @@
     - id: tool-goal
       name: '@vreal/dsh-tool-goal'
 
+    # Terminal goal-round claims pass one independent evaluator child before
+    # the goal mutation is allowed through.
+    - id: goal-evaluator
+      name: '@vreal/dsh-goal-evaluator'
+      config:
+        subagentProvider: spawn
+        evaluatorModel: ''
+
     # Fresh-agent Ralph iteration over a build-time-fixed script.
     - id: tool-ralph
       name: '@vreal/dsh-tool-ralph'
