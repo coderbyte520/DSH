@@ -97,6 +97,14 @@
 - id: tool-goal
   name: '@vreal/dsh-tool-goal'
 
+# Terminal goal-round claims pass one independent evaluator child before the
+# goal mutation is allowed through.
+- id: goal-evaluator
+  name: '@vreal/dsh-goal-evaluator'
+  config:
+    subagentProvider: spawn
+    evaluatorModel: ''
+
 # ── plan mode ───────────────────────────────────────────────────────────────
 
 # Plan state is per-agent by nature, so an entry-local realm is not a

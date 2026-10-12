@@ -10,6 +10,7 @@ import {
   type NormalizeContext,
 } from '@vreal/dsh-acp-snapshot'
 import { foldGoal } from '@vreal/dsh-goal'
+import type {} from '@vreal/dsh-goal-evaluator'
 import type { SessionEvent } from '@vreal/dsh-session'
 import { describe, expect, it } from 'vitest'
 
@@ -21,6 +22,7 @@ const overrideFile = join(scenarioDir, 'replay.override.json')
 const stdoutExpected = join(scenarioDir, 'stdout.expected.jsonl')
 const sessionExpected = join(scenarioDir, 'session.expected.jsonl')
 const wrapupDir = join(dirname(fileURLToPath(import.meta.url)), 'goal-snapshots/goal-wrapup')
+const certifiedDir = join(dirname(fileURLToPath(import.meta.url)), 'goal-snapshots/goal-certified-round')
 const refreshing = process.env.DSH_SNAPSHOT === 'refresh'
 
 const agent: AgentUnderTest = {
@@ -168,5 +170,69 @@ describe('same-session goal snapshot through the ACP automation driver', () => {
     }
     expect(stdout).toBe(await readFile(wrapupStdoutExpected, 'utf8'))
     expect(session).toBe(await readFile(wrapupSessionExpected, 'utf8'))
+  })
+
+  it('rejects a premature round completion until the evaluator child certifies it', async () => {
+    const input = JSON.parse(await readFile(join(certifiedDir, 'input.json'), 'utf8')) as InputScript
+    const result = await runScenario(input, {
+      agent,
+      mode: 'replay',
+      fixtureFile: join(certifiedDir, 'session.jsonl'),
+      overrideFile: join(certifiedDir, 'replay.override.json'),
+      childFiles: [join(certifiedDir, 'session.1.jsonl'), join(certifiedDir, 'session.2.jsonl')],
+      configPath: fileURLToPath(new URL('../goal-evaluator.cordis.yml', import.meta.url)),
+    })
+
+    expect(result.stderr).toBe('')
+    expect(result.sessionLogs).toHaveLength(3)
+    const log = result.sessionLogs[0]
+    if (log === undefined) throw new Error('certified-round snapshot did not persist its session')
+    const records = parseJsonl(log.content)
+    const events = records.slice(1) as unknown as SessionEvent[]
+
+    // Round one claims completion before the work is verified: the evaluator
+    // child answers `continue`, the claim is rejected, and only the round-two
+    // claim passes once its evaluator answers `complete`.
+    const calls = events.filter(event => event.type === 'tool/call').map(event => event.data.name)
+    expect(calls).toEqual(['create_goal', 'update_goal', 'update_goal'])
+    const results = events.filter(event => event.type === 'tool/result')
+    expect(JSON.stringify(results[1]?.data)).toContain('GOAL_EVALUATOR_REJECTED')
+    expect(JSON.stringify(results[1]?.data)).toContain('Complete the second half of the snapshot objective.')
+    expect(JSON.stringify(results[2]?.data)).not.toContain('GOAL_EVALUATOR')
+    const evaluations = events
+      .filter(event => event.type === 'goal/evaluation')
+      .map(event => ({ ...event.data, ignorable: event.ignorable }))
+    expect(evaluations.map(event => event.verdict)).toEqual(['continue', 'complete'])
+    expect(evaluations.every(event => event.ignorable === true)).toBe(true)
+    expect(evaluations[0]).toMatchObject({ requestedAction: 'complete', round: 1 })
+    expect(foldGoal(events)).toMatchObject({
+      goal: {
+        objective: 'Finish the ACP certified-round snapshot proof',
+        phase: 'complete',
+        maxGoalRounds: 2,
+      },
+      roundsStarted: 2,
+    })
+    const closing = events.filter(event => event.type === 'assistant/message')
+      .flatMap(event => event.data.message.content)
+      .filter(block => block.type === 'text' && block.text.startsWith('GOAL CERTIFIED'))
+    expect(closing).toHaveLength(1)
+
+    const context: NormalizeContext = {
+      sessionIds: [result.sessionId, log.id].filter((id): id is string => id !== undefined),
+      cwd: result.cwd,
+    }
+    const stdout = normalizeStdout(result.rawStdout, context)
+    const session = normalizeGoalLog(log.content, context)
+    const certifiedStdoutExpected = join(certifiedDir, 'stdout.expected.jsonl')
+    const certifiedSessionExpected = join(certifiedDir, 'session.expected.jsonl')
+    if (refreshing) {
+      await Promise.all([
+        writeFile(certifiedStdoutExpected, stdout),
+        writeFile(certifiedSessionExpected, session),
+      ])
+    }
+    expect(stdout).toBe(await readFile(certifiedStdoutExpected, 'utf8'))
+    expect(session).toBe(await readFile(certifiedSessionExpected, 'utf8'))
   })
 })

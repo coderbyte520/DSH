@@ -1,0 +1,65 @@
+{
+  "name": "@vreal/dsh-goal-evaluator",
+  "description": "Certifies terminal goal-round updates through one fresh independent evaluator child",
+  "version": "0.1.1-rc.2",
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/coderbyte520/DSH.git",
+    "directory": "packages/goal/goal-evaluator"
+  },
+  "type": "module",
+  "main": "lib/index.js",
+  "types": "lib/types/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./lib/types/index.d.ts",
+      "default": "./lib/index.js"
+    },
+    "./invariant": {
+      "types": "./lib/types/invariant.d.ts",
+      "default": "./lib/invariant.js"
+    },
+    "./src/*": "./src/*",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "lib/index.js",
+    "lib/invariant.js",
+    "lib/types/**/*.d.ts"
+  ],
+  "license": "MIT",
+  "peerDependencies": {
+    "@vreal/dsh-agent": "workspace:^",
+    "@vreal/dsh-goal": "workspace:^",
+    "@vreal/dsh-invariants": "workspace:^",
+    "@vreal/dsh-llm": "workspace:^",
+    "@vreal/dsh-session": "workspace:^",
+    "@vreal/dsh-system-prompt": "workspace:^",
+    "@vreal/dsh-subagent": "workspace:^",
+    "@vreal/dsh-tool-goal": "workspace:^",
+    "@vreal/dsh-tools": "workspace:^",
+    "@vreal/cordis": "workspace:^"
+  },
+  "dependencies": {
+    "@vreal/schemastery": "workspace:^"
+  },
+  "devDependencies": {
+    "@vreal/cordis-plugin-loader": "workspace:^",
+    "@vreal/dsh-agent": "workspace:^",
+    "@vreal/dsh-agent-loop": "workspace:^",
+    "@vreal/dsh-agent-loop-testkit": "workspace:^",
+    "@vreal/dsh-goal": "workspace:^",
+    "@vreal/dsh-invariants": "workspace:^",
+    "@vreal/dsh-llm": "workspace:^",
+    "@vreal/dsh-session": "workspace:^",
+    "@vreal/dsh-system-prompt": "workspace:^",
+    "@vreal/dsh-subagent": "workspace:^",
+    "@vreal/dsh-subagent-spawn-in-process": "workspace:^",
+    "@vreal/dsh-tool-goal": "workspace:^",
+    "@vreal/dsh-tools": "workspace:^",
+    "@vreal/cordis": "workspace:^"
+  }
+}

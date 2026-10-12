@@ -710,6 +710,26 @@ export interface Config {
 
 Source: [`packages/goal/goal/src/index.ts:116`](../packages/goal/goal/src/index.ts)
 
+<a id="vrealdsh-goal-evaluator"></a>
+
+## `@vreal/dsh-goal-evaluator`
+
+Requires: `agents` · `goals` · `subagents` · `systemPrompt` · `tools`
+
+```ts config-catalog
+/** Deployment policy for goal-round terminal-claim certification. */
+export interface Config {
+  /** Whether terminal goal-round claims are certified (default `true`). */
+  enabled?: boolean
+  /** Fresh structured-output provider used for every evaluator child (default `spawn`). */
+  subagentProvider?: string
+  /** Optional model override for the evaluator child. Empty = the parent's model. */
+  evaluatorModel?: string
+}
+```
+
+Source: [`packages/goal/goal-evaluator/src/index.ts:27`](../packages/goal/goal-evaluator/src/index.ts)
+
 <a id="vrealdsh-headless"></a>
 
 ## `@vreal/dsh-headless`
@@ -2614,7 +2634,7 @@ export interface Config {
 }
 ```
 
-Source: [`packages/goal/tool-goal/src/index.ts:26`](../packages/goal/tool-goal/src/index.ts)
+Source: [`packages/goal/tool-goal/src/index.ts:28`](../packages/goal/tool-goal/src/index.ts)
 
 <a id="vrealdsh-tool-jobs"></a>
 
@@ -2729,6 +2749,30 @@ export interface Config {
 ```
 
 Source: [`packages/workflow/tool-ralph/src/index.ts:23`](../packages/workflow/tool-ralph/src/index.ts)
+
+<a id="vrealdsh-tool-ralph-evaluated"></a>
+
+## `@vreal/dsh-tool-ralph-evaluated`
+
+Requires: `tools` · `workflowEngine` · `subagents` · `systemPrompt`
+
+```ts config-catalog
+/** Deployment policy for the fixed evaluated Ralph workflow. */
+export interface Config {
+  /** Fresh structured-output provider used for every worker and evaluator (default `spawn`). */
+  subagentProvider?: string
+  /** Default and deployment ceiling for one call's round count (default 256). */
+  maxRounds?: number
+  /** Maximum serialized characters in one evaluator-verified handoff (default 16384). */
+  maxHandoffChars?: number
+  /** Maximum characters in a successful parent-facing terminal text (default 16384). */
+  maxResultChars?: number
+  /** Optional model override for the evaluator child. Empty = use the loop's default model. */
+  evaluatorModel?: string
+}
+```
+
+Source: [`packages/workflow/tool-ralph-evaluated/src/index.ts:26`](../packages/workflow/tool-ralph-evaluated/src/index.ts)
 
 <a id="vrealdsh-tool-session-query"></a>
 

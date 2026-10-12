@@ -142,8 +142,12 @@ flowchart LR
   cfg --> plugin_dsh_base_tool_todo
   plugin_dsh_base_tool_goal["tool-goal<br/>@vreal/dsh-tool-goal"]
   cfg --> plugin_dsh_base_tool_goal
+  plugin_dsh_base_goal_evaluator["goal-evaluator<br/>@vreal/dsh-goal-evaluator"]
+  cfg --> plugin_dsh_base_goal_evaluator
   plugin_dsh_base_tool_ralph["tool-ralph<br/>@vreal/dsh-tool-ralph"]
   cfg --> plugin_dsh_base_tool_ralph
+  plugin_dsh_base_tool_ralph_evaluated["tool-ralph-evaluated<br/>@vreal/dsh-tool-ralph-evaluated"]
+  cfg --> plugin_dsh_base_tool_ralph_evaluated
   plugin_dsh_base_tool_str_replace_editor["tool-str-replace-editor<br/>@vreal/dsh-tool-str-replace-editor"]
   cfg --> plugin_dsh_base_tool_str_replace_editor
   plugin_dsh_base_repeat_tool_reminder["repeat-tool-reminder<br/>@vreal/dsh-repeat-tool-reminder"]
@@ -235,7 +239,9 @@ flowchart LR
 | `tool-result-pruner` | `@vreal/dsh-compaction-tool-result-pruner` |
 | `tool-todo` | `@vreal/dsh-tool-todo` |
 | `tool-goal` | `@vreal/dsh-tool-goal` |
+| `goal-evaluator` | `@vreal/dsh-goal-evaluator` |
 | `tool-ralph` | `@vreal/dsh-tool-ralph` |
+| `tool-ralph-evaluated` | `@vreal/dsh-tool-ralph-evaluated` |
 | `tool-str-replace-editor` | `@vreal/dsh-tool-str-replace-editor` |
 | `repeat-tool-reminder` | `@vreal/dsh-repeat-tool-reminder` |
 | `web` | `@vreal/dsh-web` |

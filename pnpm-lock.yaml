@@ -506,6 +506,9 @@ importers:
       '@vreal/dsh-goal':
         specifier: workspace:*
         version: link:../packages/goal/goal
+      '@vreal/dsh-goal-evaluator':
+        specifier: workspace:*
+        version: link:../packages/goal/goal-evaluator
       '@vreal/dsh-goal-round-driver':
         specifier: workspace:*
         version: link:../packages/goal/goal-round-driver
@@ -1058,6 +1061,9 @@ importers:
       '@vreal/dsh-goal':
         specifier: workspace:^
         version: link:../../goal/goal
+      '@vreal/dsh-goal-evaluator':
+        specifier: workspace:^
+        version: link:../../goal/goal-evaluator
       '@vreal/dsh-goal-round-driver':
         specifier: workspace:^
         version: link:../../goal/goal-round-driver
@@ -4738,6 +4744,55 @@ importers:
       '@vreal/dsh-typert-protocol':
         specifier: workspace:^
         version: link:../../typert/protocol
+
+  packages/goal/goal-evaluator:
+    dependencies:
+      '@vreal/schemastery':
+        specifier: link:../../../vendor/schemastery
+        version: link:../../../vendor/schemastery
+    devDependencies:
+      '@vreal/cordis':
+        specifier: workspace:^
+        version: link:../../../vendor/cordis
+      '@vreal/cordis-plugin-loader':
+        specifier: workspace:^
+        version: link:../../../vendor/loader
+      '@vreal/dsh-agent':
+        specifier: workspace:^
+        version: link:../../core/agent
+      '@vreal/dsh-agent-loop':
+        specifier: workspace:^
+        version: link:../../core/agent-loop
+      '@vreal/dsh-agent-loop-testkit':
+        specifier: workspace:^
+        version: link:../../test-support/agent-loop-testkit
+      '@vreal/dsh-goal':
+        specifier: workspace:^
+        version: link:../goal
+      '@vreal/dsh-invariants':
+        specifier: workspace:^
+        version: link:../../runtime-diagnostics/invariants
+      '@vreal/dsh-llm':
+        specifier: workspace:^
+        version: link:../../llm/llm
+      '@vreal/dsh-session':
+        specifier: workspace:^
+        version: link:../../core/session
+      '@vreal/dsh-subagent':
+        specifier: workspace:^
+        version: link:../../subagent/subagent
+      '@vreal/dsh-subagent-spawn-in-process':
+        specifier: workspace:^
+        version: link:../../subagent/subagent-spawn-in-process
+      '@vreal/dsh-system-prompt':
+        specifier: workspace:^
+        version: link:../../core/system-prompt
+      '@vreal/dsh-tool-goal':
+        specifier: workspace:^
+        version: link:../tool-goal
+      '@vreal/dsh-tools':
+        specifier: workspace:^
+        version: link:../../core/tools
 
   packages/goal/goal-round-driver:
     devDependencies:
@@ -8842,6 +8897,9 @@ importers:
       '@vreal/dsh-goal':
         specifier: workspace:^
         version: link:../../packages/goal/goal
+      '@vreal/dsh-goal-evaluator':
+        specifier: workspace:^
+        version: link:../../packages/goal/goal-evaluator
       '@vreal/dsh-goal-round-driver':
         specifier: workspace:^
         version: link:../../packages/goal/goal-round-driver
@@ -9037,6 +9095,9 @@ importers:
       '@vreal/dsh-tool-ralph':
         specifier: workspace:^
         version: link:../../packages/workflow/tool-ralph
+      '@vreal/dsh-tool-ralph-evaluated':
+        specifier: workspace:^
+        version: link:../../packages/workflow/tool-ralph-evaluated
       '@vreal/dsh-tool-skill':
         specifier: workspace:^
         version: link:../../packages/skill/tool-skill

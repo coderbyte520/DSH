@@ -426,6 +426,21 @@ export type SessionEvent<T extends SessionEventType = SessionEventType> = {
 
 来源：[`packages/goal/goal/src/domain.ts:66`](../packages/goal/goal/src/domain.ts)
 
+<a id="goalevaluation--log-only"></a>
+
+#### `goal/evaluation` — log-only
+
+```ts persistence-catalog
+/**
+ * One independent evaluator's audit verdict over a terminal goal-round
+ * claim. Purely informational: no fold consumes it and losing it cannot
+ * change session reconstruction.
+ */
+'goal/evaluation': GoalEvaluationMeta
+```
+
+来源：[`packages/goal/goal-evaluator/src/types.ts:49`](../packages/goal/goal-evaluator/src/types.ts)
+
 ### `hook/*`
 
 <a id="hookinvoked--log-only"></a>

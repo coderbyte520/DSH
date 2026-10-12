@@ -1057,6 +1057,17 @@ describe('Session', () => {
     }
   })
 
+  it('appends the ignorable marker on non-surface events only when requested', () => {
+    const session = Session.create(SessionId('ignorable-append'))
+    session.append('turn/start', { turn: 1 })
+    const marked = session.append('turn/end', { turn: 1, reason: { kind: 'completed' } }, { ignorable: true })
+    expect(marked.ignorable).toBe(true)
+    const unmarked = session.append('turn/start', { turn: 2 })
+    expect(unmarked.ignorable).toBeUndefined()
+    expect(session.events[1]?.ignorable).toBe(true)
+    expect(session.events[2]?.ignorable).toBeUndefined()
+  })
+
   it('rejects seed records with invalid fixed-envelope fields', () => {
     const base = {
       type: 'turn/start',

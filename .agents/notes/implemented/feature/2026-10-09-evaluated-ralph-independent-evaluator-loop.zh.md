@@ -6,7 +6,7 @@ Status: implemented
 
 ## Problem
 
-全新 agent 的 Ralph 工具会向一个目标迭代，但完成与阻塞是 worker 自申报：执行工作的同一个子代理决定循环结束，工具信封也如此声明。同样的缺口也是同会话 goal round driver 的第一条后续工作。在把 evaluator 认证接入 goal 生命周期——那会牵动持久状态、revision 与续跑策略——之前，harness 需要证据证明独立 evaluator 确实能改善循环结果，而这样的成本与风险只有可移除的 PoC 才能承担。
+全新 agent 的 Ralph 工具会向一个目标迭代，但完成与阻塞是 worker 自申报：执行工作的同一个子代理决定循环结束，工具信封也如此声明。同样的缺口也存在于同会话 goal round driver，其认证后来作为独立的 [目标轮次完成认证](2026-10-10-goal-round-completion-certification.zh.md) 消费者发布。在把 evaluator 认证接入 goal 生命周期——那会牵动持久状态、revision 与续跑策略——之前，harness 需要证据证明独立 evaluator 确实能改善循环结果，而这样的成本与风险只有可移除的 PoC 才能承担。
 
 外部 agent provider（`claude-code`、`codex`）不声明任何 start-time 能力，因此今天无法返回结构化 verdict；它们在出货组合中也是 dormant 的 Profile Bundle。任何需要结构化输出的 evaluator PoC 都必须跑在 in-process provider 之上。
 
@@ -55,4 +55,4 @@ worker 或 evaluator 子代理落定为不成功时映射为 `round-failed`，�
 - 未覆盖时 evaluator 是同族子代理；跨家族验证等待外部 provider 支持结构化输出。
 - evaluator verdict 仍是模型判断而非机械认证的证明：evaluator 被要求对照工作区验证，但没有机制强制它运行超出其自行判断的检查。
 - 仅前台、工作区是唯一跨轮记忆、无轮内 fan-out、无重试、无 token/价格/时间预算——全部继承自 `ralph` 模式并同样顺延。
-- goal 域集成（在 `goal-round-driver` 中认证 goal 轮次完成）是有意的下一步，不在本 PoC 范围内。
+- goal 域集成已在本 PoC 之外发布：[`@vreal/dsh-goal-evaluator`](../../../../packages/goal/goal-evaluator/README.zh.md) 在 goal 工具之上认证终结性 `update_goal` 主张，并沿用本 PoC 的 verdict 词汇。

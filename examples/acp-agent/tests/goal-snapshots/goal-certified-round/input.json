@@ -1,0 +1,14 @@
+{
+  "steps": [
+    { "op": "initialize" },
+    { "op": "newSession" },
+    {
+      "op": "promptAndWaitForAgentMessage",
+      "text": "Create a durable two-round goal for the certified-round snapshot, then report readiness.",
+      "waitForText": "GOAL READY"
+    },
+    { "op": "waitForTurnStart", "minimumTurn": 3 },
+    { "op": "waitForGoalPhase", "phase": "complete" },
+    { "op": "waitForTurnEnd" }
+  ]
+}

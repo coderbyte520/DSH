@@ -366,6 +366,11 @@
 - id: tool-goal
   disabled: true
 
+# The web app ships no goal domain (tool-goal above), so its terminal-claim
+# certifier stays off with it.
+- id: goal-evaluator
+  disabled: true
+
 - id: plan-mode
   disabled: true
 

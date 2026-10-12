@@ -1,0 +1,14 @@
+# Certified-round overlay: the ACP automation tree plus the goal-evaluator row
+# that runs one fresh evaluator child before a goal-round completion or
+# blockage commits.
+- id: base
+  name: '@vreal/cordis-plugin-include'
+  config:
+    path: ./cordis.yml
+    patches:
+      - insert:
+          - id: goal-evaluator
+            name: '@vreal/dsh-goal-evaluator'
+            config:
+              subagentProvider: spawn
+              evaluatorModel: ''
