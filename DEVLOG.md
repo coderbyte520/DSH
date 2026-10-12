@@ -77,11 +77,27 @@
 
 **覆盖率车道现在剩下的**：不是覆盖率——`test:coverage-exempt-heavy`（`--maxWorkers=2`）里 pwsh 相关用例卡在**产品内部的 20 秒命令超时**（"Your command timed out after 20 seconds"），另有重型脚本用例撞 30/60 秒超时。已把 vitest 超时提到 30 秒，但内部 20 秒那道需要单独查（标准 Linux runner 上 pwsh 会话为何挂起）。
 
+**pwsh 20 秒之谜的根因定位**：拉取最新失败跑（38229243336，node 24 / coverage）的**断言正文**（顶层摘要看不到）后，三条 pwsh 失败指向同一个根因域——真实 pwsh over PTY 的流协议在 Linux 上的行为差异，既不是"会话启动慢"，也不是"沙箱不可用"：
+
+- `tool-pwsh-persistent/loader-composition.spec.ts` 的 "preserves cwd and environment across calls"：实际收到的是产品内部的 `Your command timed out after 20 seconds`。命令已提交、已回显、提示符也已返回，但 `__DSH_PERSISTENT_PWSH_END_<nonce>:` 完成标记从未被检测到；部分输出混有 PSReadLine 重绘转义序列与 `^C`。
+- 同文件 "pins UTF-8 output encoding"：编码钉死用例在同一 runner 上失败，与标记损坏互相印证（编码层）。
+- `terminal-bash/tests/local.spec.ts:299`：不是超时——等待原因返回 `inferred_idle` 而期望 `stdin_read`，即 PTY 空闲推断启发式把 Linux pwsh 的提示符误分类。
+
+根因域收窄到 `packages/shell/tool-pwsh-persistent/src/index.ts` 的标记扫描（约 L111–160，"一页足以找到刚发出的完成标记"的假设在 Linux 流式分块下可能失效）与 `packages/terminal/terminal-bash` 的空闲推断。因盲改标记扫描风险高，结论是**先诊断后修**：复用现成的 `ci-snapshot-diagnose.yml` 模式，扩一个只跑这两个包、带流日志并上传 artifact 的轻量诊断作业。已被排除的假设：持久会话提交的 wrapper 单行只有约 400 字节，不会撞 Linux PTY 规范模式的 4096 字节行上限。
+
+**同一批拿到的机械问题与杂项**：
+
+- `scripts/merge-translation-pairing-driver.sh` 在 Git 索引里缺执行位（Windows 上 `core.filemode` 掩盖了它），Linux 上 `git merge` 调用该驱动直接 `Permission denied`，令 `translation-pairing-merge.spec.ts` 整文件失败。已改为 `100755`（`git update-index --chmod=+x`，约 5 个失败用例随之消失，且是确定性修复）。
+- `code-runtime-worker-thread/runtime.spec.ts:384`（64 MiB 边界用例）撞 vitest 60 秒超时，属 runner 负载而非行为变化，后续按需加该用例的显式超时或纳入 exempt-heavy 名册。
+- `typert/generator/type-model.spec.ts:195` 是快照 mismatch，需要先看 diff 才能判断真伪，本轮未动。
+
+**归档退役的故障切换手册**：`2026-07-26-ci-failover-runbook` 三件套已按归档流程移入 `archived/process/`——双语各插入同一 `Archived: 2026-10-12` 行、sidecar 重录为归档路径与当前 blob 哈希、`verify-archived-agent-notes --write` 追加封印（429 → 432 件）。两处活跃 Note（`2026-07-21-serial-cross-platform-ci-reference`、`2026-07-22-evidence-based-larger-hosted-runners`）的入链改指归档路径并重录配对哈希，因此活跃配对从 1011 降到 1010 对，全部一致。
+
 **仍未做 / 风险**：
 
 - 快照漂移已定位到具体用例（`test:snapshot` 的 `pwsh-tool-turn` header 与两处 `session.jsonl`、`web browser snapshot` 的 `image-display`／`hmr-live`），但 CI 日志把断言正文截断，且本机是 Windows——快照车道在 Windows 上有 18 处环境性失败，而 fixture 要求能在 macOS/Linux 重放。因此"修复或重录"必须在 Linux 侧做：可行路径是加一个手动触发的诊断作业，把实际输出作为 artifact 传上来，再决定是修代码还是走 `test:snapshot:refresh`。
 - A2 的缓存播种要等本改动落到 `main` 后才会对 PR 车道生效。
-- 上游的 `2026-07-26-ci-failover-runbook` 是一份仍在 `implemented/` 的 Agent Note，描述的正是本次移出的故障切换机制；退役它需要走归档三件套与封印哈希流程，作为后续独立改动。
+- 失败面还剩两处必须在 Linux 侧收口：快照漂移与 pwsh 流协议；两者都要靠手动诊断作业取回真实输出，本地 Windows 无法复现。
 - 本仓库没有分支保护（私有 + 免费计划），所以"必需检查"仍无法真正启用；契约靠 `all-checks-passed` 聚合门与本地测试维持，而不是靠 GitHub 强制。
 
 ## 2026-10-12 · 阶段一：verifiable-reward 机械打分落地
