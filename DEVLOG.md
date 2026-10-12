@@ -24,6 +24,9 @@
 - 修复 `scripts/prepare-ci-bubblewrap.sh` 的失效固定版本：`bubblewrap 0.9.0-1ubuntu0.1` 已从 archive 下架导致 e2e 在 setup 阶段 404，改为 `0.9.0-1ubuntu0.3` 并更新 sha256（新哈希为本地下载实算）。
 - 站点构建改为先清理自身产物：新增 `scripts/clean-doc-site.ts`（含测试），`docs:build` / `docs:build:mpa` 先执行它。原因是投影的覆盖保护会把上一次构建留下的 `website/.dist` 当作他人产物，导致第二次构建必然失败——修复后连续两次构建均通过。
 - 让 PR 车道热启动：`ci-master.yml` 的 `post-merge` 现在是默认分支上的缓存写入者——恢复并保存 pnpm store 与 Playwright 浏览器缓存（键与 PR 车道读取的完全一致），并只下载浏览器二进制（apt 依赖仍按次安装）。此前 `ci.yml` 的各车道只做 restore，没有任何保存者，PR 每次都是冷装冷下。
+- `windows-native` 从 PR 车道移到新的 `ci-nightly.yml`（nightly 定时 + 手动触发，`windows-latest`）。理由是它一次 36.5 分钟、按 Windows 2 倍计费，而失败类目与 Linux 完全相同；PR 上保留 `windows node 24 / wine blocking`（5m27s）作为阻塞面，Windows 专属回归最迟一天内可见。契约测试同步钉住"PR 工作流不再定义 windows-native、nightly 工作流定义它"。
+- 消重：`sdk/server/src/server.ts` 的 `createSession` 抽出一个本地 `create()`（原先同一文件内重复三遍 `agents.create`）；`tool-ralph-evaluated` 的刻意克隆与 goal-evaluator 复用的 verdict 解码词表改为带理由的 `jscpd:ignore` 区块。`pnpm run duplication` 从 8 处克隆降到 **0**。
+- 覆盖率缺口补齐：修好 `sdk/server` 那个被过宽 `ctx.get` mock 弄坏的用例，并新增 resume 三条路径的用例（100%）；为 `ui-subagent` 增加"菜单随视口/滚动重定位"用例；为 `tool-goal` 增加"peek 在无权威时不抛错"用例。三个包本地均为每文件 100%。
 
 **契约锁定**：`scripts/ci-workflow.spec.ts` 现在钉住下游契约本身——两个工作流的每个作业都运行在标准托管 runner、文件中不出现 `DSH_CI_FAILOVER`、不出现 `self-hosted`、`e2e`/`release` 仅手动触发、两个 org-Project 工作流不存在而 policy 库存在；`.github/AGENTS.md` 同步改写为该契约的常驻说明。这样"回到上游矩阵"或"悄悄重加自托管车道"都会在本地测试里失败。
 
@@ -57,10 +60,8 @@
 
 **仍未做 / 风险**：
 
-- 语料门禁的处置待定：重录（约 450 对配对哈希 + 归档封印）还是给 fork 显式豁免。这是让 PR 车道变绿的最大杠杆。
-- 覆盖率缺口（上述两个文件）与 `duplication`／快照漂移需要修或确认后重录，否则 PR 车道会持续红在这三类既有问题上。
+- 快照漂移已定位到具体用例（`test:snapshot` 的 `pwsh-tool-turn` header 与两处 `session.jsonl`、`web browser snapshot` 的 `image-display`／`hmr-live`），但 CI 日志把断言正文截断，且本机是 Windows——快照车道在 Windows 上有 18 处环境性失败，而 fixture 要求能在 macOS/Linux 重放。因此"修复或重录"必须在 Linux 侧做：可行路径是加一个手动触发的诊断作业，把实际输出作为 artifact 传上来，再决定是修代码还是走 `test:snapshot:refresh`。
 - A2 的缓存播种要等本改动落到 `main` 后才会对 PR 车道生效。
-- `windows-native` 是否降级为"PR 只跑阻塞子集、完整清单手动/nightly"（成本决定，不是时长决定）。
 - 上游的 `2026-07-26-ci-failover-runbook` 是一份仍在 `implemented/` 的 Agent Note，描述的正是本次移出的故障切换机制；退役它需要走归档三件套与封印哈希流程，作为后续独立改动。
 - 本仓库没有分支保护（私有 + 免费计划），所以"必需检查"仍无法真正启用；契约靠 `all-checks-passed` 聚合门与本地测试维持，而不是靠 GitHub 强制。
 

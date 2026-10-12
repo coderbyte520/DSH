@@ -222,6 +222,11 @@ export class HarnessSdkJsonRpcServer {
       ...this.maxTokens === undefined ? {} : { maxTokens: this.maxTokens },
     }
     const id = SessionId(sessionId)
+    const create = (): Promise<AgentHandle> => this.ctx.agents.create({
+      sessionId: id,
+      meta: { cwd: this.cwd },
+      agentOptions,
+    })
     const persistence = this.ctx.get('sessionPersistence')
     let handle: AgentHandle
     if (persistence !== undefined) {
@@ -236,25 +241,13 @@ export class HarnessSdkJsonRpcServer {
           // Persisted artifact present but unreadable — stay loud; only absent ids create fresh.
           const stillExists = (await persistence.list()).some((header: SessionHeader) => header.id === sessionId)
           if (stillExists) throw resumeError
-          handle = await this.ctx.agents.create({
-            sessionId: id,
-            meta: { cwd: this.cwd },
-            agentOptions,
-          })
+          handle = await create()
         }
       } else {
-        handle = await this.ctx.agents.create({
-          sessionId: id,
-          meta: { cwd: this.cwd },
-          agentOptions,
-        })
+        handle = await create()
       }
     } else {
-      handle = await this.ctx.agents.create({
-        sessionId: id,
-        meta: { cwd: this.cwd },
-        agentOptions,
-      })
+      handle = await create()
     }
     const rec: SessionRecord = { handle }
     this.sessions.set(sessionId, rec)

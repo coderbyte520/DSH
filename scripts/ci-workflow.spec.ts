@@ -9,7 +9,11 @@ const nativeWindowsPnpmDestination = '${{ runner.temp }}/setup-pnpm-js'
 
 describe('CI workflow', () => {
   it('isolates every pnpm action setup destination per runner', () => {
-    const files = ['.github/workflows/ci.yml', '.github/workflows/ci-master.yml']
+    const files = [
+      '.github/workflows/ci.yml',
+      '.github/workflows/ci-master.yml',
+      '.github/workflows/ci-nightly.yml',
+    ]
     const setups: Array<{ jobName: string; step: unknown }> = []
     for (const file of files) {
       const workflow: unknown = yaml.load(readFileSync(resolve(root, file), 'utf8'))
@@ -36,26 +40,28 @@ describe('CI workflow', () => {
     }
   })
 
-  it('keeps every lane on a standard hosted runner: required Wine, independent native Windows, and a post-merge lane', () => {
+  it('keeps every lane on a standard hosted runner: required Wine, a nightly native Windows lane, and a post-merge lane', () => {
     const workflow = loadWorkflow('.github/workflows/ci.yml')
     const masterWorkflow = loadWorkflow('.github/workflows/ci-master.yml')
+    const nightlyWorkflow = loadWorkflow('.github/workflows/ci-nightly.yml')
     if (!isRecord(workflow.jobs)
       || !isRecord(workflow.jobs.windows)
-      || !isRecord(workflow.jobs['windows-native'])
       || !isRecord(workflow.jobs['node-24'])
       || !isRecord(workflow.jobs['node-24-coverage'])
       || !isRecord(workflow.jobs['node-24-consumers'])
       || !isRecord(workflow.jobs['all-checks-passed'])
       || !isRecord(masterWorkflow.jobs)
       || !isRecord(masterWorkflow.jobs['wine-apt-cache'])
-      || !isRecord(masterWorkflow.jobs['post-merge'])) {
-      throw new TypeError('CI workflow must define windows, windows-native, node-24, node-24-coverage, node-24-consumers, and all-checks-passed; ci-master must define wine-apt-cache and post-merge')
+      || !isRecord(masterWorkflow.jobs['post-merge'])
+      || !isRecord(nightlyWorkflow.jobs)
+      || !isRecord(nightlyWorkflow.jobs['windows-native'])) {
+      throw new TypeError('CI workflow must define windows, node-24, node-24-coverage, node-24-consumers, and all-checks-passed; ci-master must define wine-apt-cache and post-merge; ci-nightly must define windows-native')
     }
 
     const windows = workflow.jobs.windows
-    const windowsNative = workflow.jobs['windows-native']
     const wineAptCache = masterWorkflow.jobs['wine-apt-cache']
     const postMerge = masterWorkflow.jobs['post-merge']
+    const windowsNative = nightlyWorkflow.jobs['windows-native']
     const node24 = workflow.jobs['node-24']
     const node24Coverage = workflow.jobs['node-24-coverage']
     const node24Consumers = workflow.jobs['node-24-consumers']
@@ -73,11 +79,14 @@ describe('CI workflow', () => {
     expect(windows.if).toBe("github.event_name == 'pull_request'")
     expect(commandSteps.some(step => step.run.includes('wine-windows-gates.sh'))).toBe(true)
 
-    // windows-native: non-blocking native job on the standard hosted Windows
-    // image, running the complete native gate inventory under pwsh.
+    // windows-native: the complete native inventory runs nightly (and on
+    // dispatch) on the standard hosted Windows image, never inside the
+    // pull-request verdict.
     expect(windowsNative['runs-on']).toBe('windows-latest')
     expect(windowsNative.name).toBe('windows node 24 / native complete')
-    expect(windowsNative.if).toBe("github.event_name == 'pull_request'")
+    expect(nightlyWorkflow.on).toHaveProperty('schedule')
+    expect(nightlyWorkflow.on).toHaveProperty('workflow_dispatch')
+    expect(workflow.jobs).not.toHaveProperty('windows-native')
     expect(windowsNative.env).toMatchObject({
       DSH_COVERAGE_TEST_TIMEOUT_MS: '30000',
     })
@@ -120,17 +129,16 @@ describe('CI workflow', () => {
     expect(aggregate.needs).toContain('windows')
     expect(aggregate.needs).not.toContain('windows-native')
 
-    // Every blocking lane, the native Windows lane, and the verdict run on a
-    // standard GitHub-hosted runner.
+    // Every blocking lane and the verdict run on a standard GitHub-hosted
+    // runner.
     for (const [jobName, job] of [
       ['node-24', node24],
       ['node-24-coverage', node24Coverage],
       ['node-24-consumers', node24Consumers],
-      ['windows-native', windowsNative],
       ['all-checks-passed', aggregate],
     ] as const) {
       expect(job['runs-on'], `${jobName} must run on a standard hosted runner`)
-        .toBe(jobName === 'windows-native' ? 'windows-latest' : 'ubuntu-latest')
+        .toBe('ubuntu-latest')
     }
   })
 
@@ -147,7 +155,12 @@ describe('CI workflow', () => {
     // No lane may read an upstream failover variable, and every explicit runner
     // label is a standard GitHub-hosted image rather than a self-hosted pool or
     // an organization-scoped label this repository cannot allocate.
-    for (const [file, loaded] of [['ci.yml', prWorkflow], ['ci-master.yml', workflow]] as const) {
+    const nightly = loadWorkflow('.github/workflows/ci-nightly.yml')
+    for (const [file, loaded] of [
+      ['ci.yml', prWorkflow],
+      ['ci-master.yml', workflow],
+      ['ci-nightly.yml', nightly],
+    ] as const) {
       const raw = readFileSync(resolve(root, `.github/workflows/${file}`), 'utf8')
       expect(raw, `${file} must not reference an upstream failover variable`).not.toContain('DSH_CI_FAILOVER')
       if (!isRecord(loaded.jobs)) throw new TypeError(`${file} must define jobs`)
