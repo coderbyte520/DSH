@@ -364,6 +364,12 @@
         headChars: 4096
         tailChars: 1024
 
+    # Mechanical verifiable-reward scoring of shell outcomes: one ignorable
+    # `reward/check` event per matched command. Log-only — no fold consumes it,
+    # and the observer cannot change a result, a request, or a tool-log row.
+    - id: verifiable-reward
+      name: '@vreal/dsh-verifiable-reward'
+
     - id: tool-todo
       name: '@vreal/dsh-tool-todo'
       config:

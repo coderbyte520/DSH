@@ -138,6 +138,8 @@ flowchart LR
   cfg --> plugin_dsh_base_session_checkpoint_policy
   plugin_dsh_base_tool_result_pruner["tool-result-pruner<br/>@vreal/dsh-compaction-tool-result-pruner"]
   cfg --> plugin_dsh_base_tool_result_pruner
+  plugin_dsh_base_verifiable_reward["verifiable-reward<br/>@vreal/dsh-verifiable-reward"]
+  cfg --> plugin_dsh_base_verifiable_reward
   plugin_dsh_base_tool_todo["tool-todo<br/>@vreal/dsh-tool-todo"]
   cfg --> plugin_dsh_base_tool_todo
   plugin_dsh_base_tool_goal["tool-goal<br/>@vreal/dsh-tool-goal"]
@@ -237,6 +239,7 @@ flowchart LR
 | `spill-policy` | `@vreal/dsh-spill-policy` |
 | `session-checkpoint-policy` | `@vreal/dsh-session-checkpoint-policy` |
 | `tool-result-pruner` | `@vreal/dsh-compaction-tool-result-pruner` |
+| `verifiable-reward` | `@vreal/dsh-verifiable-reward` |
 | `tool-todo` | `@vreal/dsh-tool-todo` |
 | `tool-goal` | `@vreal/dsh-tool-goal` |
 | `goal-evaluator` | `@vreal/dsh-goal-evaluator` |

@@ -3084,6 +3084,63 @@ export type ApprovalPolicy = 'ask' | 'never'
 
 来源：[`packages/interaction/user-approval/src/index.ts:177`](../packages/interaction/user-approval/src/index.ts)
 
+<a id="vrealdsh-verifiable-reward"></a>
+
+## `@vreal/dsh-verifiable-reward`
+
+依赖：`tools`
+
+```ts config-catalog
+/**
+ * Deployment policy for mechanical shell-outcome scoring. The exported schema
+ * is the validation boundary: pattern sources are checked here only for being
+ * non-empty, and their compilation is checked when the plugin loads.
+ */
+export interface Config {
+  /** Whether shell outcomes are scored (default `true`). */
+  readonly enabled?: boolean
+  /** Tool names observed (default `['bash', 'pwsh']`). */
+  readonly tools?: string[]
+  /** Ordered first-match-wins command scoring rules (default `defaultChecks`). */
+  readonly checks?: CheckSpec[]
+  /** Penalty patterns scanned over scored calls (default `defaultForbiddenPatterns`). */
+  readonly forbiddenPatterns?: ForbiddenSpec[]
+}
+
+/** Deployment-configured scoring rule for one class of commands. */
+export interface CheckSpec {
+  /** Unique label recorded in the audit event. */
+  readonly name: string
+  /** How the outcome is scored. */
+  readonly kind: RewardCheckKind
+  /** RegExp source matched against the command string. */
+  readonly commandPattern: string
+  /** Optional RegExp source extracting the passed count from stdout (test kind only); empty keeps the default extraction. */
+  readonly passedPattern?: string
+  /** Optional RegExp source extracting the failed count from stdout (test kind only); empty keeps the default extraction. */
+  readonly failedPattern?: string
+  /** Relative weight inside round aggregation (default `1`). */
+  readonly weight?: number
+}
+
+/** Deployment-configured penalty applied when a pattern matches a scored call. */
+export interface ForbiddenSpec {
+  /** Unique label recorded in the audit event. */
+  readonly name: string
+  /** RegExp source matched against the configured scope. */
+  readonly pattern: string
+  /** Score subtracted on a hit before clamping (default `1`). */
+  readonly penalty?: number
+  /** Where the pattern is tested (default `any`). */
+  readonly scope?: 'command' | 'stdout' | 'stderr' | 'any'
+}
+
+/** Environment outcome classes a shell command may be scored as. */
+export type RewardCheckKind = 'build' | 'test' | 'run'
+```
+
+来源：[`packages/reward/verifiable-reward/src/index.ts:61`](../packages/reward/verifiable-reward/src/index.ts)
+
 <a id="vrealdsh-web"></a>
 
 ## `@vreal/dsh-web`

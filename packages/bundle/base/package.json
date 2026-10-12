@@ -114,6 +114,7 @@
     "@vreal/dsh-typert-registry": "workspace:^",
     "@vreal/dsh-user-approval": "workspace:^",
     "@vreal/dsh-user-questions": "workspace:^",
+    "@vreal/dsh-verifiable-reward": "workspace:^",
     "@vreal/dsh-web": "workspace:^",
     "@vreal/dsh-web-search-deepseek": "workspace:^",
     "@vreal/dsh-workflow-worker-thread": "workspace:^",
