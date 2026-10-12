@@ -69,6 +69,14 @@
 
 静态车道与覆盖率阈值这两类既有债务已经清掉；PR 车道上剩下的红只有"快照内容漂移"与"重型脚本用例在标准 runner 上超时"两处，且都已定位到具体用例。
 
+**快照漂移的诊断（手动诊断作业 `ci-snapshot-diagnose.yml`）**：第一次运行的 refresh 不可信——诊断没有准备 bubblewrap，示例拒绝 workspace-write，重录出的是"no sandbox backend is usable"的错误状态。对齐真实车道的准备步骤（`DSH_EXAMPLE_MODE=lib` + `prepare-ci-bubblewrap.sh`）后重跑，diff 从 23 个文件缩到 20 个，web 的 code-mode／round-trip／turn-tail 三项消失（说明它们本来就是被污染出来的）。可信 diff 的归类：
+
+- **正当重录类**：`job_*` 工具描述里的产品措辞从 "task" 改成了 "job"（"forwarded to the task" → "to the job" 等），会经由 `request/header` 的 toolSchemas 传播进多条 `session.jsonl`。源码变了、钉住的期望没跟上，属于该重录的陈旧快照。
+- **需要判断类（不要盲录）**：① `pwsh-tool-turn/tool-schemas.expected.json` 在 Linux 上少掉整个 `pwsh` 工具条目（平台/组合差异，需决定是让 fixture 平台无关还是给期望加平台条件）；② web `steer-all/mid-steer` 录到的是"Ask question waiting / Running"的进行中态，而钉住的是已结算的输入栏（捕获时机或结算谓词问题）；③ `agent-instructions/session.jsonl` 的注入内容不同（fixture 物化差异）。
+- **纯噪声**：多次 session 日志 diff 只是新生成的 UUID（refresh 写原始 id、比较时归一化），不属于行为变化。
+
+**覆盖率车道现在剩下的**：不是覆盖率——`test:coverage-exempt-heavy`（`--maxWorkers=2`）里 pwsh 相关用例卡在**产品内部的 20 秒命令超时**（"Your command timed out after 20 seconds"），另有重型脚本用例撞 30/60 秒超时。已把 vitest 超时提到 30 秒，但内部 20 秒那道需要单独查（标准 Linux runner 上 pwsh 会话为何挂起）。
+
 **仍未做 / 风险**：
 
 - 快照漂移已定位到具体用例（`test:snapshot` 的 `pwsh-tool-turn` header 与两处 `session.jsonl`、`web browser snapshot` 的 `image-display`／`hmr-live`），但 CI 日志把断言正文截断，且本机是 Windows——快照车道在 Windows 上有 18 处环境性失败，而 fixture 要求能在 macOS/Linux 重放。因此"修复或重录"必须在 Linux 侧做：可行路径是加一个手动触发的诊断作业，把实际输出作为 artifact 传上来，再决定是修代码还是走 `test:snapshot:refresh`。
