@@ -578,6 +578,23 @@ Source: [`packages/core/session/src/types.ts:313`](../packages/core/session/src/
 
 Source: [`packages/core/session/src/types.ts:308`](../packages/core/session/src/types.ts)
 
+### `reward/*`
+
+<a id="rewardcheck--log-only"></a>
+
+#### `reward/check` — log-only
+
+```ts persistence-catalog
+/**
+ * One mechanically computed environment score over a shell tool outcome.
+ * Purely informational: no fold consumes it and losing it cannot change
+ * session reconstruction.
+ */
+'reward/check': RewardCheckMeta
+```
+
+Source: [`packages/reward/verifiable-reward/src/types.ts:80`](../packages/reward/verifiable-reward/src/types.ts)
+
 ### `sandbox/*`
 
 <a id="sandboxmode--log-only"></a>

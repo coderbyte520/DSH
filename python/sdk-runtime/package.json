@@ -115,6 +115,7 @@
     "@vreal/dsh-user-approval": "workspace:^",
     "@vreal/dsh-anonymous-user-id": "workspace:^",
     "@vreal/dsh-user-questions": "workspace:^",
+    "@vreal/dsh-verifiable-reward": "workspace:^",
     "@vreal/dsh-web": "workspace:^",
     "@vreal/dsh-web-fetch-http": "workspace:^",
     "@vreal/dsh-web-search-deepseek": "workspace:^",

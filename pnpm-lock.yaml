@@ -1229,6 +1229,9 @@ importers:
       '@vreal/dsh-user-questions':
         specifier: workspace:^
         version: link:../../interaction/user-questions
+      '@vreal/dsh-verifiable-reward':
+        specifier: workspace:^
+        version: link:../../reward/verifiable-reward
       '@vreal/dsh-web':
         specifier: workspace:^
         version: link:../../web/web
@@ -5981,6 +5984,40 @@ importers:
         specifier: workspace:^
         version: link:../../core/system-prompt
 
+  packages/reward/verifiable-reward:
+    dependencies:
+      '@vreal/schemastery':
+        specifier: link:../../../vendor/schemastery
+        version: link:../../../vendor/schemastery
+    devDependencies:
+      '@vreal/cordis':
+        specifier: workspace:^
+        version: link:../../../vendor/cordis
+      '@vreal/cordis-plugin-loader':
+        specifier: workspace:^
+        version: link:../../../vendor/loader
+      '@vreal/dsh-agent':
+        specifier: workspace:^
+        version: link:../../core/agent
+      '@vreal/dsh-agent-loop':
+        specifier: workspace:^
+        version: link:../../core/agent-loop
+      '@vreal/dsh-agent-loop-testkit':
+        specifier: workspace:^
+        version: link:../../test-support/agent-loop-testkit
+      '@vreal/dsh-invariants':
+        specifier: workspace:^
+        version: link:../../runtime-diagnostics/invariants
+      '@vreal/dsh-llm':
+        specifier: workspace:^
+        version: link:../../llm/llm
+      '@vreal/dsh-session':
+        specifier: workspace:^
+        version: link:../../core/session
+      '@vreal/dsh-tools':
+        specifier: workspace:^
+        version: link:../../core/tools
+
   packages/runtime-diagnostics/invariants:
     dependencies:
       '@vreal/schemastery':
@@ -9131,6 +9168,9 @@ importers:
       '@vreal/dsh-user-questions':
         specifier: workspace:^
         version: link:../../packages/interaction/user-questions
+      '@vreal/dsh-verifiable-reward':
+        specifier: workspace:^
+        version: link:../../packages/reward/verifiable-reward
       '@vreal/dsh-web':
         specifier: workspace:^
         version: link:../../packages/web/web

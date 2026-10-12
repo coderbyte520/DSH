@@ -26,6 +26,7 @@
       "entry": [
         "scripts/**/*.mjs",
         "scripts/**/*.cjs",
+        "scripts/rebrand.ts",
         "scripts/types/client-build-environment/index.d.ts"
       ],
       "ignoreUnresolved": [
