@@ -7,8 +7,15 @@ name: Snapshot diagnose
 # truncated CI assertion bodies into a reviewable patch without touching the
 # pull request's own branch.
 
+# `workflow_dispatch` only reaches workflows that exist on the default branch,
+# so until this file lands there the push trigger is how a feature branch runs
+# it: touch this file to request a diagnostic. The paths filter keeps an
+# ordinary push from starting a 60-minute lane.
 on:
   workflow_dispatch:
+  push:
+    paths:
+      - .github/workflows/ci-snapshot-diagnose.yml
 
 permissions:
   contents: read

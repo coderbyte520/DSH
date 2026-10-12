@@ -207,11 +207,18 @@ describe('CI workflow', () => {
     // The credential- and toolchain-dependent lanes are manual-only here: the
     // e2e suites need a DEEPSEEK_API_KEY this repository does not hold, and the
     // pack job needs the publishing toolchain it does not wire up.
-    for (const file of ['e2e.yml', 'release.yml', 'ci-snapshot-diagnose.yml']) {
+    for (const file of ['e2e.yml', 'release.yml']) {
       const manual = loadWorkflow(`.github/workflows/${file}`)
       if (!isRecord(manual.on)) throw new TypeError(`${file} must define on`)
       expect(Object.keys(manual.on)).toEqual(['workflow_dispatch'])
     }
+
+    // The snapshot diagnostic is dispatch-only once it lands on the default
+    // branch; its branch-local push trigger is filtered to this one file.
+    const diagnose = loadWorkflow('.github/workflows/ci-snapshot-diagnose.yml')
+    if (!isRecord(diagnose.on)) throw new TypeError('ci-snapshot-diagnose.yml must define on')
+    expect(Object.keys(diagnose.on).sort()).toEqual(['push', 'workflow_dispatch'])
+    expect(diagnose.on.push).toMatchObject({ paths: ['.github/workflows/ci-snapshot-diagnose.yml'] })
 
     // The vendor pack lane keeps its pull-request signal: it runs on a standard
     // runner and passes.
