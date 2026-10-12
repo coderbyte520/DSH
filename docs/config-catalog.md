@@ -2772,7 +2772,7 @@ export interface Config {
 }
 ```
 
-Source: [`packages/workflow/tool-ralph-evaluated/src/index.ts:26`](../packages/workflow/tool-ralph-evaluated/src/index.ts)
+Source: [`packages/workflow/tool-ralph-evaluated/src/index.ts:32`](../packages/workflow/tool-ralph-evaluated/src/index.ts)
 
 <a id="vrealdsh-tool-session-query"></a>
 
