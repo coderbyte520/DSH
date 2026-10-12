@@ -32,9 +32,35 @@
 - `translation pairing` 与 `archived agent notes`：语料整体陈旧（此前已记录，约 450 对）。
 - `documentation site checks`：其符号链接用例需要目录符号链接权限，本机为 EPERM。
 
+**首轮实测定（PR #20，标准托管 runner，整轮墙钟 07:04:50Z → 07:42:29Z ≈ 37.6 分钟）**：
+
+| 车道 | 用时 | 结果 |
+|---|---|---|
+| `node 24 / static` | 5m03s | 35 通过 / 2 失败：`translation pairing`、`archived agent notes` |
+| `node 24 / snapshots and artifacts` | 8m06s | 7 通过 / 3 失败：`lint and duplication`、`test:snapshot`、`web browser snapshot` |
+| `node 24 / coverage` | 17m28s | 0 通过 / 2 失败：per-file 100% 未达（`packages/sdk/server/src/server.ts`、`packages/client/ui-subagent/src/client/SubagentHeaderLineage.tsx`） |
+| `node 22.19` | 3m51s | 通过 |
+| `node 26` | 49s | 通过 |
+| `windows node 24 / wine blocking` | 5m27s | 通过 |
+| `python 3.10 / keyless SDK` | 20s | 通过 |
+| `python runtime`（三条） | 8s / 15s / 6m07s | 通过 |
+| `windows node 24 / native complete` | 36m33s | 5 个门禁失败：`test:coverage`、`test:coverage-exempt-heavy`、`translation pairing`、`archived agent notes`、`duplication` |
+| `all checks passed` | 3s | 失败（聚合门，符合设计） |
+
+结论一：**标准 runner 容量足够**。最长 Linux 车道 17.5 分钟、Windows 原生 36.5 分钟、整轮约 38 分钟；没有排队超时、没有 OOM、没有缺失环境或密钥，四个原本"永远排不到机器"的车道全部真正跑完。契约本身可用，不需要上游的企业池。
+
+结论二：**所有失败都是既有债务，只是以前车道从未运行所以看不见**。三类：语料级门禁（rebrand 改写 3624 个文件但没有重录约 450 对配对哈希与归档封印）；`duplication` / `lint and duplication` 与快照漂移（`test:snapshot` 的 pwsh header 与会话日志、`web browser snapshot` 的 image-display 用例）；覆盖率 per-file 门槛（`sdk/server/src/server.ts` 来自本仓库自己的 "sdk server: resume persisted sessions" 提交，另一处是 UI 文件）。
+
+结论三：**本次改动在 CI 上自证**。`documentation build` 通过（A1 的清理修复生效，243s），`documentation site checks` 在 Linux 通过（符号链接用例本就依赖该权限）；失败快照日志中不出现 `reward/check`，即 reward 插件没有改变这些快照。
+
+结论四：`windows-native` 是最贵的一条（36.5 分钟 × Windows 2 倍计费），但它跑完了，失败原因与 Linux 完全同类——是否降级只取决于成本与噪音，不取决于时长。
+
 **仍未做 / 风险**：
 
-- 这些车道需要在本仓库 GitHub Actions 上真跑一次才能确认标准 runner 的资源是否足够（尤其 `windows-native` 的 `check:ci:windows-complete`，已保留 120 分钟超时；覆盖率车道的分区与 worker 数在标准 runner 上是否够快也需实测）。
+- 语料门禁的处置待定：重录（约 450 对配对哈希 + 归档封印）还是给 fork 显式豁免。这是让 PR 车道变绿的最大杠杆。
+- 覆盖率缺口（上述两个文件）与 `duplication`／快照漂移需要修或确认后重录，否则 PR 车道会持续红在这三类既有问题上。
+- A2 的缓存播种要等本改动落到 `main` 后才会对 PR 车道生效。
+- `windows-native` 是否降级为"PR 只跑阻塞子集、完整清单手动/nightly"（成本决定，不是时长决定）。
 - 上游的 `2026-07-26-ci-failover-runbook` 是一份仍在 `implemented/` 的 Agent Note，描述的正是本次移出的故障切换机制；退役它需要走归档三件套与封印哈希流程，作为后续独立改动。
 - 本仓库没有分支保护（私有 + 免费计划），所以"必需检查"仍无法真正启用；契约靠 `all-checks-passed` 聚合门与本地测试维持，而不是靠 GitHub 强制。
 
