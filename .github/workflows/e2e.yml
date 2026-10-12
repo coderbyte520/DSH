@@ -25,22 +25,19 @@ name: E2E (real DeepSeek API)
 # The fork/secret model and its public-repo implications are recorded in
 # .agents/notes/implemented/testing/2026-06-19-real-api-e2e-ci.md.
 #
-# Note: scheduled triggers are auto-disabled after 60 days of repo inactivity;
-# push/pull_request/workflow_dispatch act as backstops.
+# Manual-only in this downstream repository. The suites require a real
+# DEEPSEEK_API_KEY, and this repository holds no Actions secrets, so a pull
+# request must never collect a verdict from a lane whose credential it cannot
+# have. Run it from the Actions tab, or run `pnpm run test:e2e` locally with a
+# key in the environment.
 on:
   workflow_dispatch:
-  push:
-    branches: [main, master]
-  pull_request:
-  schedule:
-    # 00:17 UTC nightly = 08:17 Asia/Shanghai — off the top-of-hour cron stampede.
-    - cron: '17 0 * * *'
 
-# Cancel a superseded PR run (it is on a stale commit); never cancel a
-# push/schedule run — it is already producing the post-merge/nightly signal.
+# Nothing here is a post-merge or nightly signal any more: one manual run at a
+# time per ref is enough, and a re-dispatch replaces its stale predecessor.
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+  cancel-in-progress: true
 
 # Least privilege: this job only reads the repo to run tests.
 permissions:

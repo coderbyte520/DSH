@@ -11,6 +11,32 @@
 | 三 | 训练闭环适配（PRM、GRPO/RLVR、奖励劫持防护） | 未开始 |
 | 四 | 运维观测与能力固化 | 未开始（观测底座已有部分现成能力） |
 
+## 2026-10-12 · CI 契约按「下游产品仓库」重写
+
+**目标**：让这个仓库的 CI 红灯重新变成有意义的信号。原状是照搬上游的组织级矩阵——付费 runner 标签、`DSH_CI_FAILOVER_*` 仓库变量、自托管待命作业、依赖上游 org Project 的 Issue 工作流——在本仓库里这些要么排不到机器（静默 24 小时超时），要么必然失败，于是红灯被长期忽略。
+
+**变更**：
+
+- `ci.yml`：`node 24 / static`、`node 24 / coverage`、`node 24 / snapshots and artifacts`、`windows-native` 与 `all-checks-passed` 全部改到标准托管 runner（前四项 `ubuntu-latest`，Windows 原生车道 `windows-latest`）；删除故障切换变量、自托管专属步骤与企业级并发覆盖，改由各门禁脚本按标准 runner 自适应默认值。
+- `ci-master.yml`：重写为 `push(main)` + `workflow_dispatch`，只保留两件事——为 PR 的 Wine 车道播种 apt 缓存的 `wine-apt-cache`，以及验证合并结果的 `post-merge`（install → build → 单测 → 静态门禁）。上游的自托管串行待命作业与大 runner 基准测试全部移除。
+- `e2e.yml`、`release.yml`：改为仅手动触发。前者需要本仓库不持有的 `DEEPSEEK_API_KEY`，后者需要尚未接通的发布工具链；保留为可手动运行的工具，不再参与 PR 判定。
+- 删除 `.github/workflows/issue-policy.yml` 与 `.github/workflows/issue-lifecycle.yml`：它们为上游组织的 Project 看板铸造 App token，本仓库没有该看板。`.github/issue-management/` 的 policy 库与其测试保留（静态门禁仍执行 `test:issue-management`），将来建立 fork 自有看板时可以在此基础上重建一层薄工作流。
+- 修复 `scripts/prepare-ci-bubblewrap.sh` 的失效固定版本：`bubblewrap 0.9.0-1ubuntu0.1` 已从 archive 下架导致 e2e 在 setup 阶段 404，改为 `0.9.0-1ubuntu0.3` 并更新 sha256（新哈希为本地下载实算）。
+
+**契约锁定**：`scripts/ci-workflow.spec.ts` 现在钉住下游契约本身——两个工作流的每个作业都运行在标准托管 runner、文件中不出现 `DSH_CI_FAILOVER`、不出现 `self-hosted`、`e2e`/`release` 仅手动触发、两个 org-Project 工作流不存在而 policy 库存在；`.github/AGENTS.md` 同步改写为该契约的常驻说明。这样"回到上游矩阵"或"悄悄重加自托管车道"都会在本地测试里失败。
+
+**验证**：`scripts/ci-workflow.spec.ts` 15 项通过（并已加载 ci.yml / ci-master.yml / e2e.yml / release.yml 做结构断言，等价于 YAML 解析校验）；`test:issue-management` 通过；`verify-md-links`、`verify-md-wrap` 与本次改动双语 Note 的配对校验通过。本地 `check:ci:static` 为 33 通过 / 4 失败，四项失败全部是既有或环境性的，与本改动无关：
+
+- `documentation build`：站点构建要求输出目录干净——`website/.dist` / `.generated` 残留时会撞上投影自身的覆盖保护（实测：删除后构建通过，紧接着再跑一次又失败，即该构建不可重复执行）。全新 CI runner 不受影响；本地按 `pnpm run clean` 或删除这两个目录即可。
+- `translation pairing` 与 `archived agent notes`：语料整体陈旧（此前已记录，约 450 对）。
+- `documentation site checks`：其符号链接用例需要目录符号链接权限，本机为 EPERM。
+
+**仍未做 / 风险**：
+
+- 这些车道需要在本仓库 GitHub Actions 上真跑一次才能确认标准 runner 的资源是否足够（尤其 `windows-native` 的 `check:ci:windows-complete`，已保留 120 分钟超时；覆盖率车道的分区与 worker 数在标准 runner 上是否够快也需实测）。
+- 上游的 `2026-07-26-ci-failover-runbook` 是一份仍在 `implemented/` 的 Agent Note，描述的正是本次移出的故障切换机制；退役它需要走归档三件套与封印哈希流程，作为后续独立改动。
+- 本仓库没有分支保护（私有 + 免费计划），所以"必需检查"仍无法真正启用；契约靠 `all-checks-passed` 聚合门与本地测试维持，而不是靠 GitHub 强制。
+
 ## 2026-10-12 · 阶段一：verifiable-reward 机械打分落地
 
 **目标**：让一次运行的可观察事实（执行的命令、退出码、测试通过/失败数）变成可回放、可筛选的持久分数，为后续采样与训练提供不依赖模型判断的奖励信号。
