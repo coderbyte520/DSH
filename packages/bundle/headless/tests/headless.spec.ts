@@ -1,17 +1,38 @@
 /** Direct one-shot Agent driving, durable aggregation, flushing, and exit mapping. */
 
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { afterEach, describe, expect, it } from 'vitest'
 import { Context } from '@vreal/cordis'
+import { entryListSchema } from '@vreal/cordis-plugin-include'
 import AgentRegistry, { Inbox } from '@vreal/dsh-agent'
 import type { Agent, AgentHandle, CreateAgentOptions } from '@vreal/dsh-agent'
 import AgentDefaultModelConfig from '@vreal/dsh-agent-default-model'
 import { createAssistantMessage } from '@vreal/dsh-llm'
 import SessionStore from '@vreal/dsh-session'
 import type { Session, UserMessage } from '@vreal/dsh-session'
+import * as yaml from 'js-yaml'
 import { apply, Config, internals } from '../src/index.ts'
 
 const originalInternals = { ...internals }
 afterEach(() => { Object.assign(internals, originalInternals) })
+
+describe('dsh-headless bundle patch', () => {
+  it('disables automatic goal continuation in the shipped one-shot profile', () => {
+    const root = fileURLToPath(new URL('..', import.meta.url))
+    const parsed = yaml.load(readFileSync(resolve(root, 'cordis.patch.yml'), 'utf8'), { schema: entryListSchema })
+    if (!Array.isArray(parsed)) throw new TypeError('the headless patch must parse to a patch list')
+    const entries = parsed as { id?: string; disabled?: unknown; insert?: { id?: string }[] }[]
+    // The runner exits at first quiescence, so a continuation driver would
+    // reserve a round that process exit aborts. Pin the whole shipped shape so
+    // dropping the disable cannot pass unnoticed.
+    expect(new Set(entries.filter(entry => entry.disabled === true).map(entry => entry.id)))
+      .toEqual(new Set(['hmr', 'goal-round-driver']))
+    expect(entries.flatMap(entry => entry.insert ?? []).map(row => row.id))
+      .toEqual(['code-runtime', 'headless-startup', 'headless-runner'])
+  })
+})
 
 interface Script {
   before?(session: Session): void

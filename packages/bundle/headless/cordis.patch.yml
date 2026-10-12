@@ -19,6 +19,15 @@
     # Keep the same temporary process-wide Code Mode opt-in as the Web surface.
     mode: !!js process.env.DSH_TOOLS_MODE
 
+# One-shot completion contract: the runner exits at the Agent's first
+# quiescence, while an automatic continuation driver reserves its next round
+# only after the current driver retires. A round reserved then is aborted by
+# process exit, so this profile keeps the durable goal domain and its model
+# tools but ships no continuation driver; autonomous rounds belong to a
+# long-lived surface.
+- id: goal-round-driver
+  disabled: true
+
 - insert:
     # Code Mode is a core execution capability, not a Web component.
     - id: code-runtime

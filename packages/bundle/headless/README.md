@@ -17,4 +17,5 @@ None; the runner adds nothing to the request prefix.
 ## Known Limitations and Deferred Work
 
 - **One submitted task only** — the runner has no interactive follow-up surface; it waits through any work the Agent completes before returning to idle and prints the last non-empty assistant message in that interval.
+- **No automatic goal continuation** — the runner exits at the Agent's first quiescence, while a continuation driver reserves its next goal round after the current driver retires. This bundle therefore disables `goal-round-driver`: the durable goal domain and its model tools remain available, and autonomous rounds belong to a long-lived surface (`dsh web`, or a composed profile that keeps the process alive).
 - **`ctx.appExit` is launcher-owned** — booting the headless profile outside the `dsh` launcher fails loud at activation until the host provides the exit request.

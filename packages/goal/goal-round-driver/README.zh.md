@@ -59,6 +59,7 @@
 
 - **没有独立评估器**：面向模型的 goal 策略会判断证据是否足以完成，以及 blocker 在语义上是否未变；独立的 [`goal-evaluator`](../goal-evaluator/README.zh.md) 消费方认证终结性 `update_goal` 主张，但不改动此驱动器。
 - **只在同一会话执行**：此包有意不 spawn 新 agent、不 fork 会话前缀，也不实现 Ralph 风格的独立尝试；该工作流属于单独的插件层。
+- **需要长驻 surface**：该驱动器在 Agent 当前驱动器退休之后才预约下一轮，因此在第一次静默即退出的 runner 无法承载它；随附的 `headless` 组合包禁用了本行，只保留持久化目标领域（[headless 组合约定 Agent Note](../../../.agents/notes/implemented/architecture/2026-08-09-headless-direct-core-entry-point.zh.md)）。
 - **已接受队列的卸载竞态**：Cordis 插件卸载是异步的。已经被 agent inbox 接受的 goal 提示词可以在卸载开始前启动并消耗其 Round；teardown 随后会取消请求、停用 goal 的续行并等待完全停稳。不会再启动后续 Round。
 - **只有 Round 上限，不是资源预算**：token、货币、时间与提供方配额策略保持独立。对应的会话事件不会归属于 goal 消息，也不会映射为 goal 阻塞代码。
 - **异常情况不自动重试**：暂时性的提供方与持久化失败需要之后由用户授权 resume，而不会采用隐式重试策略。

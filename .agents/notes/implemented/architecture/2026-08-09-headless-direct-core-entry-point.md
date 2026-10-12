@@ -16,6 +16,8 @@ The shipped `headless` profile contains `dsh-base` and `dsh-headless`. The headl
 
 `headless-runner` is a direct core entry point. After Loader settlement, it reads `ctx.agentDefaultModel.currentSelection()`, creates a fresh persisted Agent through `ctx.agents.create`, installs that `ModelSelection` in the Agent scope, waits for startup quiescence, anchors the Session sequence, submits one ordinary user message, and waits for quiescence again. It awaits `ctx.sessions.flush`, folds its durable event interval for the last non-empty assistant text and final `turn/end` reason, writes the text plus one newline to stdout, and requests bounded launcher shutdown with exit 0 exactly when the reason is `completed`. A terminal `error` reason writes its durable code and message to stderr; unexpected driver failures also use stderr and exit 1.
 
+One-shot completion also fixes which continuation rows this profile may compose. The runner treats the Agent's first quiescence as the end of the task, while an automatic continuation driver reserves its next round only after the current driver retires; a round reserved then is aborted by process exit and leaves a cancelled turn in an otherwise successful session. The shipped profile therefore disables `goal-round-driver`, keeps the durable goal domain and its model tools, and leaves autonomous rounds to a long-lived surface (`dsh web`, or a composed profile that keeps the process alive).
+
 `@vreal/dsh-agent-default-model` owns the transport-independent default used for an Agent without a session-local selection. `AgentDefaultModelConfig` provides `ctx.agentDefaultModel` and registers the `agent-default-model` Settings section. Composition config supplies `{provider, model}`; user settings may also supply `reasoningEffort`. `currentSelection()` returns the live complete selection and `saveSelection()` writes it as a complete section, so a selection without an effort clears any stored effort. `dsh-base` supplies the composition entry. Direct and ApiProxy entry points consume this service; ApiProxy alone owns session-local precedence, model validation, and persistence of accepted Web selections.
 
 `loadProfile` recognizes the exact installation-owned headless tuple (`dsh-base`, `dsh-web-app`, `dsh-headless`) and normalizes it to the shipped headless template while preserving every other manifest field. Extra, missing, or reordered bundle lists are user-owned and remain untouched.
@@ -25,6 +27,8 @@ This note owns the headless transport and completion contracts. [Apps own their 
 ## Verification
 
 Package tests use the real Session store and Agent registry around a scripted Agent factory to pin idle-to-idle aggregation, late asynchronous completion, terminal model diagnostics, other non-completed exits, direct failures, Loader-time disposal, and flush-before-exit ordering. The keyless assembled snapshots drive `dsh --profile headless` through a replayed tool round trip, record a `user/message` with `source.kind: 'user'`, and expose a terminal model failure on stderr. Built-bin acceptance reaches a mock provider through the published entry and requires final text on stdout, exit 0, and empty stderr. Config-dump acceptance excludes every Host, Web, and Client package from the shipped headless tree; PTY shutdown coverage requires no observation line and bounded disposal.
+
+The bundle-patch test pins the shipped target set: `hmr` and `goal-round-driver` are disabled, and only `code-runtime`, `headless-startup`, and `headless-runner` are inserted.
 
 ## Alternatives considered
 
@@ -36,9 +40,13 @@ Package tests use the real Session store and Agent registry around a scripted Ag
 | Give headless a separate provider/model config | Direct and Web creation would have independent defaults and persistence. |
 | Omit Code Mode and Session persistence | Both capabilities belong to one-shot Agent execution rather than Web presentation. |
 | Normalize every tuple containing Web and headless bundles | Bundle lists are an extension surface; only the exact installation-owned tuple is safe to classify. |
+| Keep the round driver while the runner exits at first quiescence | Process exit aborts the round the driver just reserved, leaving a cancelled turn in a successful session. |
+| Extend the Agent settlement contract so one runner can wait for continuations | `whenIdle()` covers work scheduled before the current driver retires; widening it changes every consumer and its snapshots, so it waits for a second consumer. |
 
 ## Consequences
 
 `dsh --profile headless` provides a local Agent task rather than browser observation, Host APIs, or HTTP. Users who need those capabilities choose `dsh web`. Successful stderr is empty, completion follows durable flush, and the persisted Session remains available to later tooling. Its initial user message records `source.kind: 'user'` and therefore carries no ApiProxy `rpcId`.
+
+Automatic goal continuation is unavailable under `dsh --profile headless`: a task that creates an armed goal finishes its turn and the process exits.
 
 ApiProxy carrier coverage stays in the ApiProxy package. Custom one-shot profiles may include Host or Web bundles explicitly, while the shipped profile and the recognized installation-owned tuple are Web-free.
