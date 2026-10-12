@@ -93,18 +93,28 @@ describe('CI workflow', () => {
     expect(wineAptCache['runs-on']).toBe('ubuntu-latest')
 
     // post-merge: the merged tree still installs, builds, unit-tests, and
-    // passes the static gates on a standard runner.
+    // passes the static gates on a standard runner, and it seeds the browser
+    // cache the consumer lane reads.
     if (!Array.isArray(postMerge.steps)) throw new TypeError('post-merge lane must define steps')
-    const postMergeCommands = postMerge.steps
-      .filter(isRecord)
+    const postMergeSteps = postMerge.steps.filter(isRecord)
+    const postMergeCommands = postMergeSteps
       .map(step => step.run)
-      .filter((run): run is string => typeof run === 'string')
+      .filter((run): run is string => typeof run === 'string' && run.startsWith('pnpm '))
     expect(postMergeCommands).toEqual([
       'pnpm install --frozen-lockfile',
+      'pnpm --filter @vreal/dsh-web-frontend exec playwright install chromium',
       'pnpm run build',
       'pnpm run test',
       'pnpm run check:ci:static',
     ])
+
+    // The pull-request lanes are restore-only by design, so the default-branch
+    // lane must be the writer of the caches they read.
+    const postMergeUses = postMergeSteps
+      .map(step => step.uses)
+      .filter((uses): uses is string => typeof uses === 'string')
+    expect(postMergeUses.filter(uses => uses.startsWith('actions/cache/restore@'))).toHaveLength(2)
+    expect(postMergeUses.filter(uses => uses.startsWith('actions/cache/save@'))).toHaveLength(2)
 
     // Aggregate: Wine `windows` required, native `windows-native` excluded.
     expect(aggregate.needs).toContain('windows')

@@ -78,8 +78,43 @@ jobs:
         with:
           node-version: ${{ env.PRIMARY_NODE_VERSION }}
 
+      - name: Configure pnpm store path
+        id: pnpm-store
+        run: |
+          store_root="$HOME/.local/share/pnpm/store"
+          echo "PNPM_CONFIG_STORE_DIR=$store_root" >> "$GITHUB_ENV"
+          store_path=$(PNPM_CONFIG_STORE_DIR="$store_root" pnpm store path --silent)
+          echo "path=$store_path" >> "$GITHUB_OUTPUT"
+
+      # The pull-request lanes are restore-only by design, so this
+      # default-branch lane is the writer of the caches they read; without it
+      # every pull request installs and downloads cold.
+      - name: Restore pnpm store
+        id: pnpm-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: ${{ steps.pnpm-store.outputs.path }}
+          key: ${{ runner.os }}-node-${{ env.PRIMARY_NODE_VERSION }}-pnpm-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-node-${{ env.PRIMARY_NODE_VERSION }}-pnpm-
+
+      - name: Restore Playwright browser cache
+        id: playwright-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-playwright-
+
       - name: Install (immutable)
         run: pnpm install --frozen-lockfile
+
+      # The browser binary is the expensive half of the consumer lane's
+      # Playwright setup; its apt dependencies stay per-run.
+      - name: Seed the Playwright Chromium cache
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
+        run: pnpm --filter @vreal/dsh-web-frontend exec playwright install chromium
 
       - name: Build
         run: pnpm run build
@@ -91,3 +126,17 @@ jobs:
         env:
           DSH_ARCHIVE_BASE_REF: ${{ github.event.before }}
         run: pnpm run check:ci:static
+
+      - name: Save pnpm store
+        if: always() && steps.pnpm-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: ${{ steps.pnpm-store.outputs.path }}
+          key: ${{ steps.pnpm-cache.outputs.cache-primary-key }}
+
+      - name: Save Playwright browser cache
+        if: always() && steps.playwright-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ steps.playwright-cache.outputs.cache-primary-key }}

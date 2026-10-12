@@ -22,12 +22,13 @@
 - `e2e.yml`、`release.yml`：改为仅手动触发。前者需要本仓库不持有的 `DEEPSEEK_API_KEY`，后者需要尚未接通的发布工具链；保留为可手动运行的工具，不再参与 PR 判定。
 - 删除 `.github/workflows/issue-policy.yml` 与 `.github/workflows/issue-lifecycle.yml`：它们为上游组织的 Project 看板铸造 App token，本仓库没有该看板。`.github/issue-management/` 的 policy 库与其测试保留（静态门禁仍执行 `test:issue-management`），将来建立 fork 自有看板时可以在此基础上重建一层薄工作流。
 - 修复 `scripts/prepare-ci-bubblewrap.sh` 的失效固定版本：`bubblewrap 0.9.0-1ubuntu0.1` 已从 archive 下架导致 e2e 在 setup 阶段 404，改为 `0.9.0-1ubuntu0.3` 并更新 sha256（新哈希为本地下载实算）。
+- 站点构建改为先清理自身产物：新增 `scripts/clean-doc-site.ts`（含测试），`docs:build` / `docs:build:mpa` 先执行它。原因是投影的覆盖保护会把上一次构建留下的 `website/.dist` 当作他人产物，导致第二次构建必然失败——修复后连续两次构建均通过。
+- 让 PR 车道热启动：`ci-master.yml` 的 `post-merge` 现在是默认分支上的缓存写入者——恢复并保存 pnpm store 与 Playwright 浏览器缓存（键与 PR 车道读取的完全一致），并只下载浏览器二进制（apt 依赖仍按次安装）。此前 `ci.yml` 的各车道只做 restore，没有任何保存者，PR 每次都是冷装冷下。
 
 **契约锁定**：`scripts/ci-workflow.spec.ts` 现在钉住下游契约本身——两个工作流的每个作业都运行在标准托管 runner、文件中不出现 `DSH_CI_FAILOVER`、不出现 `self-hosted`、`e2e`/`release` 仅手动触发、两个 org-Project 工作流不存在而 policy 库存在；`.github/AGENTS.md` 同步改写为该契约的常驻说明。这样"回到上游矩阵"或"悄悄重加自托管车道"都会在本地测试里失败。
 
-**验证**：`scripts/ci-workflow.spec.ts` 15 项通过（并已加载 ci.yml / ci-master.yml / e2e.yml / release.yml 做结构断言，等价于 YAML 解析校验）；`test:issue-management` 通过；`verify-md-links`、`verify-md-wrap` 与本次改动双语 Note 的配对校验通过。本地 `check:ci:static` 为 33 通过 / 4 失败，四项失败全部是既有或环境性的，与本改动无关：
+**验证**：`scripts/ci-workflow.spec.ts` 17 项通过（含新清理脚本的用例；并已加载 ci.yml / ci-master.yml / e2e.yml / release.yml 做结构断言，等价于 YAML 解析校验）；`pnpm run docs:build:mpa` 连续两次均通过（修复前第二次必失败）；`knip` 通过；`test:issue-management` 通过；`verify-md-links`、`verify-md-wrap` 与本次改动双语 Note 的配对校验通过。本地 `check:ci:static` 为 34 通过 / 3 失败，三项失败全部是既有或环境性的，与本改动无关：
 
-- `documentation build`：站点构建要求输出目录干净——`website/.dist` / `.generated` 残留时会撞上投影自身的覆盖保护（实测：删除后构建通过，紧接着再跑一次又失败，即该构建不可重复执行）。全新 CI runner 不受影响；本地按 `pnpm run clean` 或删除这两个目录即可。
 - `translation pairing` 与 `archived agent notes`：语料整体陈旧（此前已记录，约 450 对）。
 - `documentation site checks`：其符号链接用例需要目录符号链接权限，本机为 EPERM。
 
