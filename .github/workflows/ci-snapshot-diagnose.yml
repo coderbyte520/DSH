@@ -21,6 +21,8 @@ permissions:
   contents: read
 
 env:
+  # The snapshot gate runs examples from built artifacts under plain Node.
+  DSH_EXAMPLE_MODE: 'lib'
   # CI runs must never report to the production telemetry endpoint baked
   # into apps/cli/cordis.yml (AppCLIEntry disables the row when set).
   DSH_TELEMETRY_DISABLED: '1'
@@ -48,6 +50,12 @@ jobs:
 
       - name: Build
         run: pnpm run build
+
+      # The consumer lane prepares bubblewrap before its snapshot gates; without
+      # it the examples refuse workspace-write and refresh would record sandbox
+      # failures instead of the behaviour under test.
+      - name: Prepare bubblewrap (unrestrict userns)
+        run: bash scripts/prepare-ci-bubblewrap.sh
 
       # Each lane first reports its divergence (the assertion bodies CI
       # truncates), then rewrites the expected outputs from this tree.
