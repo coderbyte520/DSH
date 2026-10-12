@@ -75,7 +75,7 @@ jobs:
         run: |
           set -o pipefail
           python3 - <<'PY' 2>&1 | tee pwsh-pty-transcript.txt
-          import os, pty, select, time
+          import fcntl, os, pty, select, struct, termios, time
 
           # The provider's pwsh prompt function: OSC 133;D;<status> then BEL,
           # followed by the controlled prompt text.
@@ -84,12 +84,15 @@ jobs:
           )
           MARKER = b'\x1b]133;D;'
 
-          def run_session(env_overrides, answer_cursor_query, settle_seconds=4.0):
+          def run_session(env_overrides, answer_cursor_query, window=None, settle_seconds=4.0):
               env = os.environ.copy()
               env.update(env_overrides)
               pid, fd = pty.fork()
               if pid == 0:
                   os.execvpe('pwsh', ['pwsh', '-NoLogo', '-NoProfile'], env)
+              if window is not None:
+                  rows, cols = window
+                  fcntl.ioctl(fd, termios.TIOCSWINSZ, struct.pack('HHHH', rows, cols, 0, 0))
               transcript = bytearray()
 
               def drain(seconds):
@@ -120,17 +123,22 @@ jobs:
               os.close(fd)
               return bytes(transcript)
 
+          # The provider spawns pwsh with TERM=dumb, NO_COLOR, and a resolved
+          # window size (rows 40, cols 160 by default). The window size is the
+          # axis PSReadLine's renderer divides by.
+          PROVIDER = {'TERM': 'dumb', 'NO_COLOR': '1'}
           CASES = [
-              ('inherited TERM', {}, False),
-              ('TERM=dumb (provider)', {'TERM': 'dumb'}, False),
-              ('TERM=dumb + NO_COLOR', {'TERM': 'dumb', 'NO_COLOR': '1'}, False),
-              ('TERM=dumb + NO_COLOR + cursor replies', {'TERM': 'dumb', 'NO_COLOR': '1'}, True),
+              ('no window, no replies', {}, False, None),
+              ('window 40x160, no replies (provider)', PROVIDER, False, (40, 160)),
+              ('window 40x160, cursor replies', PROVIDER, True, (40, 160)),
+              ('no window, cursor replies', PROVIDER, True, None),
           ]
-          for label, overrides, answers in CASES:
-              transcript = run_session(overrides, answers)
+          for label, overrides, answers, window in CASES:
+              transcript = run_session(overrides, answers, window)
               print(f'=== {label} ===')
               print('total bytes:', len(transcript))
               print('cursor queries:', transcript.count(b'\x1b[6n'))
+              print('PSReadLine crash:', b'DivideByZeroException' in transcript)
               print('prompt markers:', transcript.count(MARKER))
               print('first submission executed:', b'first-ok' in transcript)
               print('second submission executed:', b'second-ok' in transcript)
@@ -140,7 +148,7 @@ jobs:
       - name: Summarize what the transcript contains
         continue-on-error: true
         run: |
-          grep -E '^(=== |total bytes|cursor queries|prompt markers|first submission|second submission)' pwsh-pty-transcript.txt || true
+          grep -E '^(=== |total bytes|cursor queries|PSReadLine crash|prompt markers|first submission|second submission)' pwsh-pty-transcript.txt || true
 
       - uses: actions/upload-artifact@v4
         with:
