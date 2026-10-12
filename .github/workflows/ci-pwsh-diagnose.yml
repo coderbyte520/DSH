@@ -66,12 +66,10 @@ jobs:
           --maxWorkers=2
           2>&1 | tee pwsh-suites.log
 
-      # The seam's own transcript: write one wrapper line to a real pwsh under
-      # a PTY and print every byte that comes back, in two runs that differ only
-      # in whether the cursor-position query (ESC[6n) is answered the way a
-      # terminal emulator answers it. If pwsh blocks on that query, the
-      # unanswered run stalls before the wrapper executes and the answered run
-      # shows the completion marker.
+      # The seam's own transcript: run the provider's own prompt setup and two
+      # submissions against a real pwsh under a PTY, once per environment
+      # combination that can plausibly change the terminal protocol, and report
+      # which bytes come back and whether each submission executed.
       - name: Capture the raw pwsh-over-PTY transcript
         continue-on-error: true
         run: |
@@ -79,21 +77,19 @@ jobs:
           python3 - <<'PY' 2>&1 | tee pwsh-pty-transcript.txt
           import os, pty, select, time
 
-          MARKER_START = '__DSH_PERSISTENT_PWSH_START_probe__'
-          MARKER_END = '__DSH_PERSISTENT_PWSH_END_probe__:'
-          PROMPT = '__DSH_PERSISTENT_PWSH_PROMPT__ '
-          WRAPPER = (
-              f"Write-Output '{MARKER_START}'; "
-              "$LASTEXITCODE = $null; $__s = 1; "
-              "try { Invoke-Expression \"Write-Output 'probe-ok'\"; $__ok = $? } catch { $__ok = $false }; "
-              f"if ($null -ne $LASTEXITCODE) {{ $__s = [int]$LASTEXITCODE }} else {{ $__s = if ($__ok) {{ 0 }} else {{ 1 }} }}; "
-              f"Write-Output ('{MARKER_END}' + $__s)\n"
+          # The provider's pwsh prompt function: OSC 133;D;<status> then BEL,
+          # followed by the controlled prompt text.
+          PROMPT_SETUP = (
+              "function prompt { [Console]::Write([char]27 + ']133;D;' + [int]$LASTEXITCODE + [char]7); 'dsh> ' }\n"
           )
+          MARKER = b'\x1b]133;D;'
 
-          def probe(answer_cursor_query, settle_seconds=6.0):
+          def run_session(env_overrides, answer_cursor_query, settle_seconds=4.0):
+              env = os.environ.copy()
+              env.update(env_overrides)
               pid, fd = pty.fork()
               if pid == 0:
-                  os.execvp('pwsh', ['pwsh', '-NoLogo', '-NoProfile'])
+                  os.execvpe('pwsh', ['pwsh', '-NoLogo', '-NoProfile'], env)
               transcript = bytearray()
 
               def drain(seconds):
@@ -109,39 +105,42 @@ jobs:
                       if not data:
                           break
                       transcript.extend(data)
+                      if answer_cursor_query and b'\x1b[6n' in data:
+                          os.write(fd, b'\x1b[1;1R')
 
-              drain(1.0)
-              if answer_cursor_query:
-                  os.write(fd, b'\x1b[1;1R')
-                  drain(0.5)
-              os.write(fd, f"function prompt {{ '{PROMPT}' }}\n".encode())
+              drain(1.5)
+              os.write(fd, PROMPT_SETUP.encode())
               drain(0.5)
-              before = len(transcript)
-              os.write(fd, WRAPPER.encode())
+              os.write(fd, b'Write-Output "first-ok"\n')
               drain(settle_seconds)
-              submitted = bytes(transcript[before:])
+              os.write(fd, b'Write-Output "second-ok"\n')
+              drain(settle_seconds)
               os.write(fd, b'exit\n')
               drain(0.5)
               os.close(fd)
-              return bytes(transcript), submitted
+              return bytes(transcript)
 
-          for label, answer in (('unanswered ESC[6n', False), ('answered ESC[6n', True)):
-              transcript, submitted = probe(answer)
+          CASES = [
+              ('inherited TERM', {}, False),
+              ('TERM=dumb (provider)', {'TERM': 'dumb'}, False),
+              ('TERM=dumb + NO_COLOR', {'TERM': 'dumb', 'NO_COLOR': '1'}, False),
+              ('TERM=dumb + NO_COLOR + cursor replies', {'TERM': 'dumb', 'NO_COLOR': '1'}, True),
+          ]
+          for label, overrides, answers in CASES:
+              transcript = run_session(overrides, answers)
               print(f'=== {label} ===')
               print('total bytes:', len(transcript))
-              print('bootstrap bytes:', repr(transcript[:400]))
-              print('end marker present:', MARKER_END.encode() in transcript)
-              print('start marker present:', MARKER_START.encode() in transcript)
-              print('probe output present:', b'probe-ok' in transcript)
-              print('end marker in this submission:', MARKER_END.encode() in submitted)
-              print('tail:', repr(submitted[-400:]))
+              print('cursor queries:', transcript.count(b'\x1b[6n'))
+              print('prompt markers:', transcript.count(MARKER))
+              print('first submission executed:', b'first-ok' in transcript)
+              print('second submission executed:', b'second-ok' in transcript)
+              print('transcript:', repr(transcript[:1200]))
           PY
 
       - name: Summarize what the transcript contains
         continue-on-error: true
         run: |
-          grep -c 'probe-ok' pwsh-pty-transcript.txt || true
-          grep -n '=== ' pwsh-pty-transcript.txt || true
+          grep -E '^(=== |total bytes|cursor queries|prompt markers|first submission|second submission)' pwsh-pty-transcript.txt || true
 
       - uses: actions/upload-artifact@v4
         with:
