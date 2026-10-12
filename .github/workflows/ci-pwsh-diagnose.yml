@@ -1,0 +1,137 @@
+name: pwsh PTY diagnose
+
+# Manual diagnostic: replay the persistent-pwsh suites on a Linux runner and
+# capture the raw bytes of a real pwsh session over a pseudo-terminal. The
+# coverage lane reports these suites as truncated assertion bodies, and the
+# divergence under investigation is the PowerShell-over-PTY stream protocol on
+# Linux, which a Windows checkout cannot reproduce.
+
+# `workflow_dispatch` only reaches workflows that exist on the default branch,
+# so until this file lands there the push trigger is how a feature branch runs
+# it: touch this file to request a diagnostic. The paths filter keeps an
+# ordinary push from starting the lane.
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - .github/workflows/ci-pwsh-diagnose.yml
+
+permissions:
+  contents: read
+
+env:
+  # CI runs must never report to the production telemetry endpoint baked into
+  # apps/cli/cordis.yml (AppCLIEntry disables the row when set).
+  DSH_TELEMETRY_DISABLED: '1'
+
+jobs:
+  pwsh-pty-replay:
+    name: pwsh PTY replay
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - uses: pnpm/action-setup@v4
+        with:
+          dest: ${{ runner.temp }}/setup-pnpm
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+
+      - name: Report the PowerShell under test
+        run: |
+          which pwsh
+          pwsh --version
+          pwsh -NoLogo -NoProfile -Command '$PSVersionTable | Out-String; (Get-Module -ListAvailable PSReadLine | Select-Object -First 1).Version.ToString()'
+          locale
+
+      - name: Install (immutable)
+        run: pnpm install --frozen-lockfile
+
+      # These suites import workspace sources, so they do not need the lane's
+      # build; the failure under investigation is in the PTY stream protocol.
+      - name: Replay the persistent-pwsh suites
+        continue-on-error: true
+        run: >-
+          pnpm exec vitest run
+          packages/shell/tool-pwsh-persistent
+          packages/terminal/terminal-bash
+          --reporter=verbose
+          --maxWorkers=2
+          2>&1 | tee pwsh-suites.log
+
+      # The seam's own transcript: write one wrapper line to a real pwsh under
+      # a PTY and print every byte that comes back, so the uploaded artifact
+      # shows whether the completion marker survives the decode and where the
+      # prompt-redraw escapes land.
+      - name: Capture the raw pwsh-over-PTY transcript
+        continue-on-error: true
+        run: |
+          python3 - <<'PY' 2>&1 | tee pwsh-pty-transcript.txt
+          import os, pty, select, time
+
+          MARKER_START = '__DSH_PERSISTENT_PWSH_START_probe__'
+          MARKER_END = '__DSH_PERSISTENT_PWSH_END_probe__:'
+          PROMPT = '__DSH_PERSISTENT_PWSH_PROMPT__ '
+          wrapper = (
+              f"Write-Output '{MARKER_START}'; "
+              "$LASTEXITCODE = $null; $__s = 1; "
+              "try { Invoke-Expression \"Write-Output 'probe-ok'\"; $__ok = $? } catch { $__ok = $false }; "
+              f"if ($null -ne $LASTEXITCODE) {{ $__s = [int]$LASTEXITCODE }} else {{ $__s = if ($__ok) {{ 0 }} else {{ 1 }} }}; "
+              f"Write-Output ('{MARKER_END}' + $__s)\n"
+          )
+
+          pid, fd = pty.fork()
+          if pid == 0:
+              os.execvp('pwsh', ['pwsh', '-NoLogo', '-NoProfile'])
+
+          transcript = bytearray()
+
+          def drain(seconds):
+              deadline = time.time() + seconds
+              while time.time() < deadline:
+                  ready, _, _ = select.select([fd], [], [], 0.25)
+                  if not ready:
+                      continue
+                  try:
+                      data = os.read(fd, 65536)
+                  except OSError:
+                      break
+                  if not data:
+                      break
+                  transcript.extend(data)
+              return bytes(transcript[-8192:])
+
+          print('--- bootstrap (2s) ---')
+          print(repr(drain(2.0)))
+          os.write(fd, f"function prompt {{ '{PROMPT}' }}\n".encode())
+          print('--- after prompt definition (1s) ---')
+          print(repr(drain(1.0)))
+          before = len(transcript)
+          os.write(fd, wrapper.encode())
+          print('--- after wrapper submit (5s) ---')
+          print(repr(drain(5.0)))
+          submitted = bytes(transcript[before:])
+          print('--- end marker in this submission:', MARKER_END.encode() in submitted, '---')
+          print('--- start marker in this submission:', MARKER_START.encode() in submitted, '---')
+          print('--- prompt echoed:', PROMPT.encode() in submitted, '---')
+          os.write(fd, b'exit\n')
+          os.close(fd)
+          PY
+
+      - name: Summarize what the transcript contains
+        continue-on-error: true
+        run: |
+          grep -c 'PERSISTENT_PWSH_END_probe__:' pwsh-pty-transcript.txt || true
+          grep -n 'PERSISTENT_PWSH_START_probe__' pwsh-pty-transcript.txt || true
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pwsh-pty-diagnostic
+          path: |
+            pwsh-suites.log
+            pwsh-pty-transcript.txt

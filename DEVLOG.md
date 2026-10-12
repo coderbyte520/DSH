@@ -83,7 +83,7 @@
 - 同文件 "pins UTF-8 output encoding"：编码钉死用例在同一 runner 上失败，与标记损坏互相印证（编码层）。
 - `terminal-bash/tests/local.spec.ts:299`：不是超时——等待原因返回 `inferred_idle` 而期望 `stdin_read`，即 PTY 空闲推断启发式把 Linux pwsh 的提示符误分类。
 
-根因域收窄到 `packages/shell/tool-pwsh-persistent/src/index.ts` 的标记扫描（约 L111–160，"一页足以找到刚发出的完成标记"的假设在 Linux 流式分块下可能失效）与 `packages/terminal/terminal-bash` 的空闲推断。因盲改标记扫描风险高，结论是**先诊断后修**：复用现成的 `ci-snapshot-diagnose.yml` 模式，扩一个只跑这两个包、带流日志并上传 artifact 的轻量诊断作业。已被排除的假设：持久会话提交的 wrapper 单行只有约 400 字节，不会撞 Linux PTY 规范模式的 4096 字节行上限。
+根因域收窄到 `packages/shell/tool-pwsh-persistent/src/index.ts` 的标记扫描（约 L111–160，"一页足以找到刚发出的完成标记"的假设在 Linux 流式分块下可能失效）与 `packages/terminal/terminal-bash` 的空闲推断。因盲改标记扫描风险高，结论是**先诊断后修**：新增手动诊断工作流 `ci-pwsh-diagnose.yml`（沿用 `ci-snapshot-diagnose.yml` 的形状），在 `ubuntu-latest` 上只跑 `packages/shell/tool-pwsh-persistent` 与 `packages/terminal/terminal-bash` 两个套件（`--maxWorkers=2`，verbose），并把**真实 pwsh over PTY 的原始字节**（Python `pty` 探针，含 marker 是否逐字返回、提示符重绘转义落在哪里）连同完整套件日志一起上传为 artifact——这是覆盖率车道截断掉的断言正文所替代不了的证据。该工作流不属于 `all-checks-passed`，落到 `main` 前靠"只监听自身文件"的 push 触发器从特性分支发起。已被排除的假设：持久会话提交的 wrapper 单行只有约 400 字节，不会撞 Linux PTY 规范模式的 4096 字节行上限。
 
 **同一批拿到的机械问题与杂项**：
 

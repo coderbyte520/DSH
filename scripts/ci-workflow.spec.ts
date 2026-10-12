@@ -14,6 +14,7 @@ describe('CI workflow', () => {
       '.github/workflows/ci-master.yml',
       '.github/workflows/ci-nightly.yml',
       '.github/workflows/ci-snapshot-diagnose.yml',
+      '.github/workflows/ci-pwsh-diagnose.yml',
     ]
     const setups: Array<{ jobName: string; step: unknown }> = []
     for (const file of files) {
@@ -162,10 +163,12 @@ describe('CI workflow', () => {
     // label is a standard GitHub-hosted image rather than a self-hosted pool or
     // an organization-scoped label this repository cannot allocate.
     const nightly = loadWorkflow('.github/workflows/ci-nightly.yml')
+    const pwshDiagnostic = loadWorkflow('.github/workflows/ci-pwsh-diagnose.yml')
     for (const [file, loaded] of [
       ['ci.yml', prWorkflow],
       ['ci-master.yml', workflow],
       ['ci-nightly.yml', nightly],
+      ['ci-pwsh-diagnose.yml', pwshDiagnostic],
     ] as const) {
       const raw = readFileSync(resolve(root, `.github/workflows/${file}`), 'utf8')
       expect(raw, `${file} must not reference an upstream failover variable`).not.toContain('DSH_CI_FAILOVER')
@@ -219,6 +222,16 @@ describe('CI workflow', () => {
     if (!isRecord(diagnose.on)) throw new TypeError('ci-snapshot-diagnose.yml must define on')
     expect(Object.keys(diagnose.on).sort()).toEqual(['push', 'workflow_dispatch'])
     expect(diagnose.on.push).toMatchObject({ paths: ['.github/workflows/ci-snapshot-diagnose.yml'] })
+
+    // The pwsh diagnostic follows that shape and stays out of the verdict: it
+    // replays the persistent-pwsh suites and uploads the raw PTY bytes, which
+    // is the Linux-side evidence the coverage lane truncates.
+    const pwshDiagnose = loadWorkflow('.github/workflows/ci-pwsh-diagnose.yml')
+    if (!isRecord(pwshDiagnose.on)) throw new TypeError('ci-pwsh-diagnose.yml must define on')
+    expect(Object.keys(pwshDiagnose.on).sort()).toEqual(['push', 'workflow_dispatch'])
+    expect(pwshDiagnose.on.push).toMatchObject({ paths: ['.github/workflows/ci-pwsh-diagnose.yml'] })
+    expect(workflowJob(pwshDiagnose, 'pwsh-pty-replay')['runs-on']).toBe('ubuntu-latest')
+    expect(prWorkflow.jobs).not.toHaveProperty('pwsh-pty-replay')
 
     // The vendor pack lane keeps its pull-request signal: it runs on a standard
     // runner and passes.

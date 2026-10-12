@@ -8,4 +8,6 @@ Downstream contract: every lane in this repository runs on a standard GitHub-hos
 
 `ci-nightly.yml` runs on a nightly schedule and on dispatch: the complete native Windows gate inventory on `windows-latest`. It left the pull-request verdict because one run costs 36.5 minutes at twice the Linux billing rate while reporting the same failure classes the Linux lanes already surface; pull requests keep the blocking Wine lane, and a Windows-only regression surfaces within a day.
 
+`ci-snapshot-diagnose.yml` and `ci-pwsh-diagnose.yml` are manual diagnostics on `ubuntu-latest`, outside `all-checks-passed`: the first replays a keyless snapshot lane and uploads the rewritten diff, the second replays the persistent-pwsh suites and uploads their output plus the raw bytes of a real pwsh session over a pseudo-terminal. Both exist because the failing lanes truncate assertion bodies and neither divergence reproduces on a Windows checkout. Until they exist on the default branch, each carries a push trigger filtered to its own file, which is how a feature branch requests a run.
+
 Run jobs that target Windows under native `pwsh`; the Wine lane is the deliberate exception, and it is the only Windows signal inside the required verdict.
