@@ -58,6 +58,17 @@
 
 结论四：`windows-native` 是最贵的一条（36.5 分钟 × Windows 2 倍计费），但它跑完了，失败原因与 Linux 完全同类——是否降级只取决于成本与噪音，不取决于时长。
 
+**第二轮实测（提交 8fe23f3，四项收尾之后）**：
+
+| 车道 | 结果 |
+|---|---|
+| `node 24 / static` | **转绿**：语料配对 1011 对、归档封印 429 件、配置目录全部通过 |
+| `node 22.19`、`node 26`、`python 3.10`、python runtime 三条、`windows node 24 / wine blocking` | 绿 |
+| `node 24 / coverage` | 每文件阈值缺口**已消失**（日志中不再有 `Uncovered locations`／`ERROR: Coverage`），但整体仍红在一个既有超时簇上：`test:coverage-exempt-heavy`（`--maxWorkers=2`）里 `scripts/oxlint-contract.spec.ts` 与 `scripts/translation-pairing-merge.spec.ts` 共 8 个用例撞上 5 秒默认超时——这两个文件本地 36 项全过，属小 runner 负载问题，与本次改动无关 |
+| `node 24 / snapshots and artifacts` | 只剩快照漂移两项：`test:snapshot`、`web browser snapshot` |
+
+静态车道与覆盖率阈值这两类既有债务已经清掉；PR 车道上剩下的红只有"快照内容漂移"与"重型脚本用例在标准 runner 上超时"两处，且都已定位到具体用例。
+
 **仍未做 / 风险**：
 
 - 快照漂移已定位到具体用例（`test:snapshot` 的 `pwsh-tool-turn` header 与两处 `session.jsonl`、`web browser snapshot` 的 `image-display`／`hmr-live`），但 CI 日志把断言正文截断，且本机是 Windows——快照车道在 Windows 上有 18 处环境性失败，而 fixture 要求能在 macOS/Linux 重放。因此"修复或重录"必须在 Linux 侧做：可行路径是加一个手动触发的诊断作业，把实际输出作为 artifact 传上来，再决定是修代码还是走 `test:snapshot:refresh`。
