@@ -13,6 +13,7 @@ describe('CI workflow', () => {
       '.github/workflows/ci.yml',
       '.github/workflows/ci-master.yml',
       '.github/workflows/ci-nightly.yml',
+      '.github/workflows/ci-snapshot-diagnose.yml',
     ]
     const setups: Array<{ jobName: string; step: unknown }> = []
     for (const file of files) {
@@ -88,6 +89,11 @@ describe('CI workflow', () => {
     expect(nightlyWorkflow.on).toHaveProperty('workflow_dispatch')
     expect(workflow.jobs).not.toHaveProperty('windows-native')
     expect(windowsNative.env).toMatchObject({
+      DSH_COVERAGE_TEST_TIMEOUT_MS: '30000',
+    })
+    // The pull-request coverage lane runs the heavy exempt specs with few
+    // workers on a standard runner, so it raises the same paired timeout.
+    expect(node24Coverage.env).toMatchObject({
       DSH_COVERAGE_TEST_TIMEOUT_MS: '30000',
     })
     const nativeSteps = windowsNative.steps as unknown[]
@@ -201,7 +207,7 @@ describe('CI workflow', () => {
     // The credential- and toolchain-dependent lanes are manual-only here: the
     // e2e suites need a DEEPSEEK_API_KEY this repository does not hold, and the
     // pack job needs the publishing toolchain it does not wire up.
-    for (const file of ['e2e.yml', 'release.yml']) {
+    for (const file of ['e2e.yml', 'release.yml', 'ci-snapshot-diagnose.yml']) {
       const manual = loadWorkflow(`.github/workflows/${file}`)
       if (!isRecord(manual.on)) throw new TypeError(`${file} must define on`)
       expect(Object.keys(manual.on)).toEqual(['workflow_dispatch'])
