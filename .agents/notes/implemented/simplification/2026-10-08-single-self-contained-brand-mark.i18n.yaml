@@ -1,0 +1,6 @@
+# Bilingual-pair consistency record (docs/i18n/README.md): the git blob hash of each
+# side as of the last confirmed-consistent state. Both languages carry equal authority;
+# after editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write .agents/notes/implemented/simplification/2026-10-08-single-self-contained-brand-mark.md
+2026-10-08-single-self-contained-brand-mark.md: 011d7ce7256dbffc1cfee4013e706662b11dfac7
+2026-10-08-single-self-contained-brand-mark.zh.md: 0caf125c4a4ee66d81a05d5b85e6b6bad63ce687

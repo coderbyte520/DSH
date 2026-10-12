@@ -22,8 +22,8 @@
  * - `node_modules`, `dist`, `lib`, `*.tsbuildinfo`, `.git`, `.dsh-build`,
  *   `.sessions`, `.env`.
  *
- * Brand artwork (`FishLogo.tsx`, `BrandWordmark.tsx`, `favicon.svg`) is also
- * left for a manual pass: the replacement logo is an asset swap in
+ * Brand artwork (`FishLogo.tsx`, `favicon.svg`) is also left for a manual pass:
+ * the replacement logo is an asset swap in
  * `packages/client/ui-primitives/src/` and `apps/web/public/`, not a text
  * rewrite. The script prints those manual steps after applying.
  *
@@ -141,7 +141,6 @@ if (apply) {
 2. pnpm run build:lib:host           # rebuild contract layer under new import paths
 3. Replace brand artwork (user-provided logo):
    - packages/client/ui-primitives/src/FishLogo.tsx
-   - packages/client/ui-primitives/src/BrandWordmark.tsx
    - apps/web/public/favicon.svg
    - packages/client/ui-brand-official/  (official occupant package)
 4. Review docs/ and website/ prose for "DeepSeek" mentions this codemod
