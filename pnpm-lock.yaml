@@ -1181,6 +1181,9 @@ importers:
       '@vreal/dsh-tool-ralph':
         specifier: workspace:^
         version: link:../../workflow/tool-ralph
+      '@vreal/dsh-tool-ralph-evaluated':
+        specifier: workspace:^
+        version: link:../../workflow/tool-ralph-evaluated
       '@vreal/dsh-tool-skill':
         specifier: workspace:^
         version: link:../../skill/tool-skill
@@ -8497,6 +8500,58 @@ importers:
         version: link:../web
 
   packages/workflow/tool-ralph:
+    dependencies:
+      '@vreal/schemastery':
+        specifier: link:../../../vendor/schemastery
+        version: link:../../../vendor/schemastery
+    devDependencies:
+      '@vreal/cordis':
+        specifier: workspace:^
+        version: link:../../../vendor/cordis
+      '@vreal/cordis-plugin-loader':
+        specifier: workspace:^
+        version: link:../../../vendor/loader
+      '@vreal/dsh-agent':
+        specifier: workspace:^
+        version: link:../../core/agent
+      '@vreal/dsh-agent-loop':
+        specifier: workspace:^
+        version: link:../../core/agent-loop
+      '@vreal/dsh-agent-loop-testkit':
+        specifier: workspace:^
+        version: link:../../test-support/agent-loop-testkit
+      '@vreal/dsh-invariants':
+        specifier: workspace:^
+        version: link:../../runtime-diagnostics/invariants
+      '@vreal/dsh-llm':
+        specifier: workspace:^
+        version: link:../../llm/llm
+      '@vreal/dsh-session':
+        specifier: workspace:^
+        version: link:../../core/session
+      '@vreal/dsh-subagent':
+        specifier: workspace:^
+        version: link:../../subagent/subagent
+      '@vreal/dsh-subagent-in-process-driver':
+        specifier: workspace:^
+        version: link:../../subagent/subagent-in-process-driver
+      '@vreal/dsh-subagent-spawn-in-process':
+        specifier: workspace:^
+        version: link:../../subagent/subagent-spawn-in-process
+      '@vreal/dsh-system-prompt':
+        specifier: workspace:^
+        version: link:../../core/system-prompt
+      '@vreal/dsh-tools':
+        specifier: workspace:^
+        version: link:../../core/tools
+      '@vreal/dsh-workflow':
+        specifier: workspace:^
+        version: link:../workflow
+      '@vreal/dsh-workflow-worker-thread':
+        specifier: workspace:^
+        version: link:../workflow-worker-thread
+
+  packages/workflow/tool-ralph-evaluated:
     dependencies:
       '@vreal/schemastery':
         specifier: link:../../../vendor/schemastery

@@ -234,6 +234,13 @@
         subagentProvider: spawn
         maxRounds: 64
 
+    - id: tool-ralph-evaluated
+      name: '@vreal/dsh-tool-ralph-evaluated'
+      config:
+        subagentProvider: spawn
+        maxRounds: 64
+        evaluatorModel: ''
+
 # ── remaining model-facing rows ─────────────────────────────────────────────
 
 - id: tool-ask-user

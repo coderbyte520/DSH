@@ -419,6 +419,9 @@
 - id: tool-ralph
   disabled: true
 
+- id: tool-ralph-evaluated
+  disabled: true
+
 - id: agent-instructions
   disabled: true
 

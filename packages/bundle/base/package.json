@@ -98,6 +98,7 @@
     "@vreal/dsh-tool-goal": "workspace:^",
     "@vreal/dsh-tool-pwsh": "workspace:^",
     "@vreal/dsh-tool-ralph": "workspace:^",
+    "@vreal/dsh-tool-ralph-evaluated": "workspace:^",
     "@vreal/dsh-tool-skill": "workspace:^",
     "@vreal/dsh-tool-str-replace-editor": "workspace:^",
     "@vreal/dsh-tool-subagent": "workspace:^",

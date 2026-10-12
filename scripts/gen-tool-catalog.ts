@@ -65,6 +65,7 @@ import * as ToolSubagent from '@vreal/dsh-tool-subagent'
 import * as ToolWeb from '@vreal/dsh-tool-web'
 import VmWorkflowEngine from '@vreal/dsh-workflow-worker-thread'
 import * as ToolRalph from '@vreal/dsh-tool-ralph'
+import * as ToolRalphEvaluated from '@vreal/dsh-tool-ralph-evaluated'
 import * as ToolWorkflow from '@vreal/dsh-tool-workflow'
 import { githubSlug } from './verify-md-links.ts'
 
@@ -421,6 +422,21 @@ const TOOL_PACKAGES: ToolPackage[] = [
     },
     note:
       'A fixed foreground workflow starts one fresh structured child per round; the model selects only the immutable objective and an optional round cap.',
+  },
+  {
+    pkg: '@vreal/dsh-tool-ralph-evaluated',
+    dir: 'tool-ralph-evaluated',
+    source: 'packages/workflow/tool-ralph-evaluated/src/index.ts',
+    requires: ['ctx.tools', 'ctx.workflowEngine', 'ctx.subagents', 'ctx.systemPrompt', 'a calling Agent (exec.agent parents every fresh worker and evaluator round)'],
+    writes: ['tool/call', 'tool/result', 'workflow and child session events during execution'],
+    async mount(ctx) {
+      await ctx.plugin(SubagentRuntime)
+      registerCatalogSubagentProvider(ctx, 'mock')
+      await ctx.plugin(VmWorkflowEngine, { provider: 'mock' })
+      await ctx.plugin(ToolRalphEvaluated, { subagentProvider: 'mock' })
+    },
+    note:
+      'A fixed foreground workflow starts one fresh structured worker plus one fresh structured evaluator per round; the evaluator, not the worker, decides completion, continuation, or blockage.',
   },
   {
     pkg: '@vreal/dsh-tool-skill',
