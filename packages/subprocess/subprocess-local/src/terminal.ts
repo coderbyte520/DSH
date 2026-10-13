@@ -107,9 +107,12 @@ export class LocalTerminalHandle implements SubprocessTerminalHandle {
     this.cursor.feed(data)
     const scanned = this.scannedTail + data
     this.scannedTail = scanned.slice(-QUERY_SCAN_OVERLAP)
-    if (!scanned.includes(CURSOR_POSITION_QUERY)) return
     if (this.exited) return
-    this.terminal.write(this.cursor.report())
+    // A child may ask more than once in a chunk — PowerShell asks again after
+    // every prompt — and an unanswered query blocks it until its own timeout.
+    for (let index = scanned.indexOf(CURSOR_POSITION_QUERY); index >= 0; index = scanned.indexOf(CURSOR_POSITION_QUERY, index + 1)) {
+      this.terminal.write(this.cursor.report())
+    }
   }
 
   // node-pty writes synchronously; the seam returns a promise for remote transports.

@@ -457,6 +457,19 @@ describe('LocalTerminalHandle cursor-position queries', () => {
     expect(pty.writes).toEqual(['\x1b[1;1R'])
   })
 
+  it('answers every query a chunk carries', () => {
+    const pty = new FakePty()
+    makeHandle(pty, new FakeInspector(), 10)
+
+    // An unanswered query blocks the child until its own timeout, so each one
+    // in a chunk gets its own report. Both name the chunk's end position: the
+    // child reads one report per query, and the difference within one read is
+    // not observable to it.
+    pty.emitData(`a${cursorQuery}b${cursorQuery}`)
+
+    expect(pty.writes).toEqual(['\x1b[1;3R', '\x1b[1;3R'])
+  })
+
   it('writes nothing while output carries no query', () => {
     const pty = new FakePty()
     const handle = makeHandle(pty, new FakeInspector(), 10)
