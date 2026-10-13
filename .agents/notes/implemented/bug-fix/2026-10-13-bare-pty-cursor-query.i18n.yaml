@@ -2,5 +2,5 @@
 # side as of the last confirmed-consistent state. Both languages carry equal authority;
 # after editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/bug-fix/2026-10-13-bare-pty-cursor-query.md
-2026-10-13-bare-pty-cursor-query.md: ba8d068c2bfe7b7be1a8d0a4e5bac52577f2d7f5
-2026-10-13-bare-pty-cursor-query.zh.md: 793052ab8f9102b13afb93afdfa9d0d953a9a93c
+2026-10-13-bare-pty-cursor-query.md: 5c44a6ea25ec55a6ca72440268fc8e8ea92f48dc
+2026-10-13-bare-pty-cursor-query.zh.md: 1e77bfb395ed07f5a0846cfbd79dcf421166847c
