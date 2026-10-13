@@ -41,11 +41,23 @@ describe('TerminalCursor', () => {
   it('treats other control sequences as zero width', () => {
     expect(report({ rows: 24, cols: 80 }, '\x1b[2J\x1b]133;D;0\x07\x1b[?25lab')).toBe('\x1b[1;3R')
     expect(report({ rows: 24, cols: 80 }, '\x1b[6n')).toBe('\x1b[1;1R')
-    expect(report({ rows: 24, cols: 80 }, '\x1b')).toBe('\x1b[1;1R')
     expect(report({ rows: 24, cols: 80 }, '\x1bM')).toBe('\x1b[1;1R')
+    expect(report({ rows: 24, cols: 80 }, '\x1b]0;title\x1b\\')).toBe('\x1b[1;1R')
   })
 
-  it('keeps the last position when an addressing sequence is cut off', () => {
-    expect(report({ rows: 24, cols: 80 }, '\x1b[7')).toBe('\x1b[1;1R')
+  it('carries a control sequence that is cut off across chunks', () => {
+    const cursor = new TerminalCursor({ rows: 24, cols: 80 })
+    cursor.feed('ab\x1b')
+    expect(cursor.report()).toBe('\x1b[1;3R')
+    cursor.feed('[7')
+    expect(cursor.report()).toBe('\x1b[1;3R')
+    cursor.feed(';3Hc')
+    expect(cursor.report()).toBe('\x1b[7;4R')
+
+    const osc = new TerminalCursor({ rows: 24, cols: 80 })
+    osc.feed('a\x1b]0;title\x1b')
+    expect(osc.report()).toBe('\x1b[1;2R')
+    osc.feed('\\b')
+    expect(osc.report()).toBe('\x1b[1;3R')
   })
 })

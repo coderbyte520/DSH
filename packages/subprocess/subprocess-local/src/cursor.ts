@@ -21,6 +21,8 @@ const ESCAPE = '\x1b'
 export class TerminalCursor {
   private row = 1
   private col = 1
+  /** Trailing bytes of a control sequence that continues in the next chunk. */
+  private carry = ''
 
   /**
    * @param window - the terminal's rows and columns, already validated positive.
@@ -32,16 +34,25 @@ export class TerminalCursor {
    * @param data - decoded terminal output.
    */
   feed(data: string): void {
-    for (let index = 0; index < data.length; index += 1) {
-      const char = data[index] as string
+    const text = this.carry + data
+    this.carry = ''
+    let index = 0
+    while (index < text.length) {
+      const char = text[index] as string
       if (char === ESCAPE) {
-        index = this.skipEscape(data, index)
+        const end = this.skipEscape(text, index)
+        if (end < 0) {
+          this.carry = text.slice(index)
+          return
+        }
+        index = end + 1
         continue
       }
       if (char === '\n') this.lineFeed()
       else if (char === '\r') this.col = 1
       else if (char === '\b') this.col = Math.max(1, this.col - 1)
       else if (char >= ' ') this.write()
+      index += 1
     }
   }
 
@@ -74,19 +85,22 @@ export class TerminalCursor {
    * Consume one escape sequence.
    * @param data - the chunk being scanned.
    * @param index - index of the escape byte.
-   * @returns the index of the sequence's last byte.
+   * @returns the index of the sequence's last byte, or -1 when the sequence
+   *   continues in a later chunk.
    */
   private skipEscape(data: string, index: number): number {
     const kind = data[index + 1]
-    if (kind === undefined) return index
+    if (kind === undefined) return -1
     if (kind === ']') {
-      while (index < data.length && data[index] !== '\x07') index += 1
-      return index
+      let end = index + 2
+      while (end < data.length && data[end] !== '\x07' && !(data[end] === ESCAPE && data[end + 1] === '\\')) end += 1
+      if (end >= data.length) return -1
+      return data[end] === '\x07' ? end : end + 1
     }
     if (kind !== '[') return index + 1
     let end = index + 2
     while (end < data.length && !isFinalByte(data[end] as string)) end += 1
-    if (end >= data.length) return data.length - 1
+    if (end >= data.length) return -1
     if (data[end] === 'H' || data[end] === 'f') this.moveTo(data.slice(index + 2, end))
     return end
   }

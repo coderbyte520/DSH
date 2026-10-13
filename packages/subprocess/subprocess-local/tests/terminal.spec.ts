@@ -432,7 +432,7 @@ describe('LocalTerminalHandle cursor-position queries', () => {
 
     // The report names where the child's own output left the cursor, so its
     // redraws address the line it actually occupies.
-    expect(pty.writes).toEqual(['\x1b[1;15R'])
+    expect(pty.writes).toEqual(['\x1b[1;16R'])
     expect(Buffer.concat(chunks).toString('utf8')).toBe(`PS /workspace> ${cursorQuery}`)
   })
 
