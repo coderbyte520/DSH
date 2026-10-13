@@ -502,6 +502,9 @@ export class LocalPtySession implements TerminalBackendSession {
   private settleActive(waitReason: TerminalWaitReason, retainOwnership = false): void {
     const operation = this.active
     if (operation === undefined) return
+    if (process.env.DSH_TERMINAL_READINESS_TRACE === '1') {
+      process.stderr.write(`[settle] reason=${waitReason} op=${String(operation.startedAt)} promptSeen=${String(this.promptSeen)} promptTextSeen=${String(this.promptTextSeen)} tail=${JSON.stringify(this.promptTail)} idleFor=${String(Date.now() - this.lastOutputAt)} shellPgid=${String(this.shellPgid)}\n`)
+    }
     const scrollbackTruncated = this.scrollback.snapshot().truncated
     if (retainOwnership) {
       this.stopPolling()
