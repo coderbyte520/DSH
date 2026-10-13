@@ -85,11 +85,20 @@
 
 根因域收窄到 `packages/shell/tool-pwsh-persistent/src/index.ts` 的标记扫描（约 L111–160，"一页足以找到刚发出的完成标记"的假设在 Linux 流式分块下可能失效）与 `packages/terminal/terminal-bash` 的空闲推断。因盲改标记扫描风险高，结论是**先诊断后修**：新增手动诊断工作流 `ci-pwsh-diagnose.yml`（沿用 `ci-snapshot-diagnose.yml` 的形状），在 `ubuntu-latest` 上只跑 `packages/shell/tool-pwsh-persistent` 与 `packages/terminal/terminal-bash` 两个套件（`--maxWorkers=2`，verbose），并把**真实 pwsh over PTY 的原始字节**（Python `pty` 探针，含 marker 是否逐字返回、提示符重绘转义落在哪里）连同完整套件日志一起上传为 artifact——这是覆盖率车道截断掉的断言正文所替代不了的证据。该工作流不属于 `all-checks-passed`，落到 `main` 前靠"只监听自身文件"的 push 触发器从特性分支发起。已被排除的假设：持久会话提交的 wrapper 单行只有约 400 字节，不会撞 Linux PTY 规范模式的 4096 字节行上限。
 
+**诊断结论（`ci-pwsh-diagnose.yml` 的 artifact，三次迭代）**：根因不是标记扫描，也不是空闲推断，而是 **pwsh 在 PTY 下收不到光标位置应答时会卡死在读输入之前**：
+
+- 套件全文（artifact `pwsh-suites.log`）：三个失败用例的实际收到值分别是**空 viewport**、**提交行的字面回显**（`"console=" + [Console]::OutputEncoding.WebName + …`）、以及 20 秒超时兜底——即"命令被回显但从未执行"，不是"执行了却没抓到"。
+- 裸 PTY 探针（`pwsh-pty-transcript.txt`）：无论 `TERM` 与窗口尺寸如何，未应答时 pwsh 全程只发出 4 字节 `ESC[6n`（光标位置查询），既无提示符也无任何命令执行；补上 `ESC[1;1R` 后两条提交都执行。窗口尺寸 40×160 时无崩溃；不给窗口尺寸时 PSReadLine 2.4.5 报 `DivideByZeroException`，日志里 `BufferWidth: 0`。
+- 提供方传输探针（`pwsh-node-pty-probe.txt`，node-pty + `TERM=dumb` + `NO_COLOR` + 160×40，即产品真实路径）：启动 11 字节 `ESC[?1h ESC= ESC[6n` 后静默，无 `133;D` 提示符标记，两条提交都未执行。
+
+即：当前 ubuntu 镜像上的 pwsh 7.6.6 / PSReadLine 2.4.5 在读取输入前会做一次终端查询，而 node-pty 只搬运字节、不应答任何终端查询，于是 pwsh 的 console host 阻塞；标记永不出现（工具侧 20 秒超时），就绪判定只能退化成 `inferred_idle`。修复方向（属于产品侧决策，本次未实现）：在 PTY 传输层应答终端查询（至少 DSR/CPR），或从 pwsh 引导处消除该查询。
+
 **同一批拿到的机械问题与杂项**：
 
 - `scripts/merge-translation-pairing-driver.sh` 在 Git 索引里缺执行位（Windows 上 `core.filemode` 掩盖了它），Linux 上 `git merge` 调用该驱动直接 `Permission denied`，令 `translation-pairing-merge.spec.ts` 整文件失败。已改为 `100755`（`git update-index --chmod=+x`，约 5 个失败用例随之消失，且是确定性修复）。
 - `code-runtime-worker-thread/runtime.spec.ts:384`（64 MiB 边界用例）撞 vitest 60 秒超时，属 runner 负载而非行为变化，后续按需加该用例的显式超时或纳入 exempt-heavy 名册。
 - `typert/generator/type-model.spec.ts:195` 是快照 mismatch，需要先看 diff 才能判断真伪，本轮未动。
+- `scripts/verify-public-repository-links.spec.ts` 的"冻结归档 Note"用例：rebrand 改写了该用例里的仓库名 fixture，而模块侧常量仍是原样，两条断言检查的仓库不再一致，于是恒失败。已把 fixture 提升为与模块同源的片段拼接，用例恢复通过。这条与上面的执行位问题一样，是覆盖率车道里可确定性消除的既有债务。
 
 **归档退役的故障切换手册**：`2026-07-26-ci-failover-runbook` 三件套已按归档流程移入 `archived/process/`——双语各插入同一 `Archived: 2026-10-12` 行、sidecar 重录为归档路径与当前 blob 哈希、`verify-archived-agent-notes --write` 追加封印（429 → 432 件）。两处活跃 Note（`2026-07-21-serial-cross-platform-ci-reference`、`2026-07-22-evidence-based-larger-hosted-runners`）的入链改指归档路径并重录配对哈希，因此活跃配对从 1011 降到 1010 对，全部一致。
 
@@ -97,7 +106,7 @@
 
 - 快照漂移已定位到具体用例（`test:snapshot` 的 `pwsh-tool-turn` header 与两处 `session.jsonl`、`web browser snapshot` 的 `image-display`／`hmr-live`），但 CI 日志把断言正文截断，且本机是 Windows——快照车道在 Windows 上有 18 处环境性失败，而 fixture 要求能在 macOS/Linux 重放。因此"修复或重录"必须在 Linux 侧做：可行路径是加一个手动触发的诊断作业，把实际输出作为 artifact 传上来，再决定是修代码还是走 `test:snapshot:refresh`。
 - A2 的缓存播种要等本改动落到 `main` 后才会对 PR 车道生效。
-- 失败面还剩两处必须在 Linux 侧收口：快照漂移与 pwsh 流协议；两者都要靠手动诊断作业取回真实输出，本地 Windows 无法复现。
+- 失败面剩三处：快照漂移（需按四类分别决定重录或查结算谓词）、pwsh 的终端查询阻塞（根因已确认，等 PTY 层修复决策）、64 MiB 边界用例的 runner 负载超时。
 - 本仓库没有分支保护（私有 + 免费计划），所以"必需检查"仍无法真正启用；契约靠 `all-checks-passed` 聚合门与本地测试维持，而不是靠 GitHub 强制。
 
 ## 2026-10-12 · 阶段一：verifiable-reward 机械打分落地

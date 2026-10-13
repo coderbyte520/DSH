@@ -1,11 +1,14 @@
 import { describe, expect, it } from 'vitest'
 import { findUnavailableRepositoryReferences } from './verify-public-repository-links.ts'
 
+// Assembled from fragments so this spec never carries the literal reference the
+// gate rejects.
+const unavailableOwner = ['deepseek', 'ai'].join('-')
+const unavailableName = ['deepseek', 'harness', 'sdk'].join('-')
+const unavailableRepository = `${unavailableOwner}/${unavailableName}`
+
 describe('repository link policy', () => {
   it('rejects encoded and case-varied references to the unavailable repository', () => {
-    const unavailableOwner = ['deepseek', 'ai'].join('-')
-    const unavailableName = ['deepseek', 'harness', 'sdk'].join('-')
-    const unavailableRepository = `${unavailableOwner}/${unavailableName}`
     const encodedRepository = unavailableRepository.replaceAll('-', '%2D').replace('/', '%2F')
     const htmlEncodedRepository = unavailableRepository.replace('/', '&#x2f;')
     const jsonEscapedRepository = unavailableRepository.replace('/', '\\/')
@@ -31,8 +34,6 @@ describe('repository link policy', () => {
   })
 
   it('preserves frozen archived Agent Notes', () => {
-    const unavailableRepository = ['coderbyte520', 'dsh-sdk-unavailable'].join('/')
-
     expect(findUnavailableRepositoryReferences(
       '.agents/notes/archived/process/historical-record.md',
       `https://github.com/${unavailableRepository}`,
