@@ -61,6 +61,16 @@ class BoundedTextBuffer {
     this.dropped ||= tail.truncated
   }
 
+  /**
+   * Drop characters the child just redrew. The sanitizer bounds the count to
+   * the current line, so a retraction never crosses into an earlier line.
+   * @param count - characters to remove from the retained tail.
+   */
+  truncate(count: number): void {
+    if (count <= 0) return
+    this.value = this.value.length > count ? this.value.slice(0, -count) : ''
+  }
+
   consume(): TerminalSendRead {
     const delta = this.value
     const truncated = this.dropped
@@ -106,6 +116,14 @@ class LocalSendOperation implements TerminalSendOperation {
 
   append(text: string): void {
     if (!this.finished) this.output.append(text)
+  }
+
+  /**
+   * Apply the sanitizer's retraction for a redrawn line.
+   * @param count - characters the child replaced at the end of this send's output.
+   */
+  retract(count: number): void {
+    if (!this.finished) this.output.truncate(count)
   }
 
   settle(waitReason: TerminalWaitReason, sessionStatus: TerminalSessionStatus, inheritedTruncation: boolean): void {
@@ -379,7 +397,7 @@ export class LocalPtySession implements TerminalBackendSession {
 
   private onData(data: string): void {
     const sanitized = this.sanitizer.push(data)
-    this.appendOutput(sanitized.text)
+    this.appendOutput(sanitized.text, sanitized.retract ?? 0)
     if (sanitized.prompt) {
       // TODO(pty-delayed-signal-prompt): With a reproducer, define a marker-generation boundary
       // before attributing a signal-delayed prompt to a later send.
@@ -413,9 +431,11 @@ export class LocalPtySession implements TerminalBackendSession {
     void this.terminal.terminate().catch(() => {})
   }
 
-  private appendOutput(text: string): void {
+  private appendOutput(text: string, retract = 0): void {
+    if (text.length > 0 || retract > 0) this.lastOutputAt = Date.now()
+    this.scrollback.truncate(retract)
+    this.active?.retract(retract)
     if (text.length === 0) return
-    this.lastOutputAt = Date.now()
     this.scrollback.append(text)
     this.active?.append(text)
   }

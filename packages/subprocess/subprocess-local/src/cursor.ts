@@ -1,0 +1,107 @@
+/** Cursor position of a line-oriented terminal child, fed by the child's own output. */
+
+/** Terminal window this cursor wraps and scrolls within. */
+export interface TerminalWindow {
+  /** Screen rows. */
+  rows: number
+  /** Screen columns. */
+  cols: number
+}
+
+const ESCAPE = '\x1b'
+
+/**
+ * Where the child believes the cursor stands. A bare kernel PTY has no
+ * emulator to track this, so the transport tracks the subset line-oriented
+ * children use — printable runs, carriage return, line feed, backspace, and
+ * absolute cursor addressing — and answers the child's cursor-position query
+ * with it. Full-screen cursor motion (scroll regions, tabs, relative moves) is
+ * outside the retained-text contract and leaves the estimate where it was.
+ */
+export class TerminalCursor {
+  private row = 1
+  private col = 1
+
+  /**
+   * @param window - the terminal's rows and columns, already validated positive.
+   */
+  constructor(private readonly window: TerminalWindow) {}
+
+  /**
+   * Apply one decoded output chunk to the tracked position.
+   * @param data - decoded terminal output.
+   */
+  feed(data: string): void {
+    for (let index = 0; index < data.length; index += 1) {
+      const char = data[index] as string
+      if (char === ESCAPE) {
+        index = this.skipEscape(data, index)
+        continue
+      }
+      if (char === '\n') this.lineFeed()
+      else if (char === '\r') this.col = 1
+      else if (char === '\b') this.col = Math.max(1, this.col - 1)
+      else if (char >= ' ') this.write()
+    }
+  }
+
+  /**
+   * The report a terminal client sends back for a cursor-position query.
+   * @returns the device-status-report sequence naming the tracked position.
+   */
+  report(): string {
+    return `${ESCAPE}[${String(this.row)};${String(this.col)}R`
+  }
+
+  private write(): void {
+    this.col += 1
+    if (this.col > this.window.cols) {
+      this.col = 1
+      this.scroll()
+    }
+  }
+
+  private lineFeed(): void {
+    this.col = 1
+    this.scroll()
+  }
+
+  private scroll(): void {
+    this.row = Math.min(this.row + 1, this.window.rows)
+  }
+
+  /**
+   * Consume one escape sequence.
+   * @param data - the chunk being scanned.
+   * @param index - index of the escape byte.
+   * @returns the index of the sequence's last byte.
+   */
+  private skipEscape(data: string, index: number): number {
+    const kind = data[index + 1]
+    if (kind === undefined) return index
+    if (kind === ']') {
+      while (index < data.length && data[index] !== '\x07') index += 1
+      return index
+    }
+    if (kind !== '[') return index + 1
+    let end = index + 2
+    while (end < data.length && !isFinalByte(data[end] as string)) end += 1
+    if (end >= data.length) return data.length - 1
+    if (data[end] === 'H' || data[end] === 'f') this.moveTo(data.slice(index + 2, end))
+    return end
+  }
+
+  /** Apply absolute cursor addressing, ignoring an unparseable or partial parameter list. */
+  private moveTo(parameters: string): void {
+    const [rowText, colText] = parameters.split(';')
+    const row = Number.parseInt(rowText ?? '', 10)
+    const col = Number.parseInt(colText ?? '', 10)
+    if (Number.isSafeInteger(row) && row > 0) this.row = Math.min(row, this.window.rows)
+    if (Number.isSafeInteger(col) && col > 0) this.col = Math.min(col, this.window.cols)
+  }
+}
+
+function isFinalByte(char: string): boolean {
+  const code = char.charCodeAt(0)
+  return code >= 0x40 && code <= 0x7e
+}

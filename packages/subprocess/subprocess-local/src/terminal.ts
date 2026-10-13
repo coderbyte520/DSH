@@ -10,6 +10,7 @@ import type {
   SubprocessTerminalHandle,
   SubprocessTerminalSignal,
 } from '@vreal/dsh-subprocess'
+import { TerminalCursor, type TerminalWindow } from './cursor.ts'
 import type { ProcessIdentity, ProcessInspector } from './process-inspector.ts'
 
 function delay(ms: number): Promise<void> {
@@ -26,10 +27,10 @@ function signalName(number: number | undefined): NodeJS.Signals | null {
 
 /** The cursor-position query (device status report 6) a terminal client answers. */
 const CURSOR_POSITION_QUERY = '\x1b[6n'
-/** The report sent back: row 1, column 1. */
-const CURSOR_POSITION_REPORT = '\x1b[1;1R'
 /** Characters of the previous chunk kept so a query split across chunks still matches. */
 const QUERY_SCAN_OVERLAP = CURSOR_POSITION_QUERY.length - 1
+/** Fallback window for handles constructed without a spawn spec. */
+const DEFAULT_TERMINAL_WINDOW: TerminalWindow = { rows: 24, cols: 80 }
 
 /**
  * A local terminal whose process-session ownership stays below the PTY backend.
@@ -51,6 +52,8 @@ export class LocalTerminalHandle implements SubprocessTerminalHandle {
   private exited = false
   /** Trailing output kept so a cursor-position query split across chunks still matches. */
   private scannedTail = ''
+  /** Where the child believes the cursor stands, for its cursor-position queries. */
+  private readonly cursor: TerminalCursor
   private trackedDescendants: ProcessIdentity[] = []
   /** The spawned shell's start identity; scans stop adopting members once the root pid no longer carries it. */
   private readonly rootIdentity: ProcessIdentity | undefined
@@ -59,17 +62,20 @@ export class LocalTerminalHandle implements SubprocessTerminalHandle {
    * @param terminal - allocated node-pty process.
    * @param inspector - platform process/session operations.
    * @param graceMs - TERM-to-KILL and exit-wait grace.
+   * @param window - the PTY's rows and columns; defaults to a standard 24x80 for handles built without a spawn spec.
    * @param platform - host platform; defaults to the running platform, injectable for deterministic tests.
    */
   constructor(
     private readonly terminal: IPty,
     private readonly inspector: ProcessInspector,
     private readonly graceMs: number,
+    window: TerminalWindow = DEFAULT_TERMINAL_WINDOW,
     private readonly platform: NodeJS.Platform = process.platform,
   ) {
     this.pid = terminal.pid
     this.rootIdentity = inspector.processTree(this.pid).find(member => member.pid === this.pid)
     this.done = this.outcome.promise
+    this.cursor = new TerminalCursor(window)
     this.dataDisposable = terminal.onData((data) => {
       this.answerCursorQuery(data)
       this.output.write(Buffer.from(data, 'utf8'))
@@ -90,18 +96,20 @@ export class LocalTerminalHandle implements SubprocessTerminalHandle {
    * terminal is a bare kernel PTY with no emulator above it, so a child that
    * asks where the cursor is — PowerShell does, before it reads any input —
    * waits for a report that never arrives and never reaches its input loop.
-   * The report always names the home position: this transport holds no cursor
-   * model, and its consumer renders retained text rather than a screen.
+   * The report names the position tracked from the child's own output: a fixed
+   * home position would leave the child addressing row 1 for every redraw,
+   * which reaches the retained text as a redraw of the wrong line.
    * Windows allocates ConPTY, which is the emulator and answers for itself.
    * @param data - one decoded output chunk from the child.
    */
   private answerCursorQuery(data: string): void {
     if (this.platform === 'win32') return
+    this.cursor.feed(data)
     const scanned = this.scannedTail + data
     this.scannedTail = scanned.slice(-QUERY_SCAN_OVERLAP)
     if (!scanned.includes(CURSOR_POSITION_QUERY)) return
     if (this.exited) return
-    this.terminal.write(CURSOR_POSITION_REPORT)
+    this.terminal.write(this.cursor.report())
   }
 
   // node-pty writes synchronously; the seam returns a promise for remote transports.

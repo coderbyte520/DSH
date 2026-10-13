@@ -216,6 +216,64 @@ describe('LocalPtySession readiness and output', () => {
     expect(operation.cancel()).toBe(false)
   })
 
+  it('keeps the newest render when the shell redraws a line in the scrollback', async () => {
+    vi.useFakeTimers()
+    const terminal = new FakeTerminal()
+    const session = makeSession(terminal, new FakeInspector(), config())
+    await initialize(session, terminal)
+
+    terminal.emitData('\x1b]133;D;0\x07dsh> ab')
+    // A line editor repaints through cursor addressing; a reader sees the last
+    // render, so the retained text drops the one it replaces.
+    terminal.emitData('\x1b[1;1H\x1b]133;D;0\x07dsh> abc')
+    await vi.advanceTimersByTimeAsync(10)
+
+    // The repaint addresses column 1 of the line, so the earliest prompt is the
+    // region it replaces: the retained line is the newest render alone.
+    expect(session.read({ offset: 0, count: 10 }).text).toBe('dsh> abc')
+
+    // Addressing a column inside the line replaces only that tail.
+    terminal.emitData('\x1b[1;6Hxy')
+    await vi.advanceTimersByTimeAsync(10)
+    expect(session.read({ offset: 0, count: 10 }).text).toBe('dsh> xy')
+  })
+
+  it('retracts a redraw inside the active send viewport', async () => {
+    vi.useFakeTimers()
+    const terminal = new FakeTerminal()
+    const inspector = new FakeInspector()
+    const session = makeSession(terminal, inspector, config())
+    await initialize(session, terminal)
+
+    inspector.waiting = true
+    const operation = session.startSend({ text: 'x', submit: true })
+    await Promise.resolve()
+    await Promise.resolve()
+    inspector.pgid = 789
+    terminal.emitData('ab')
+    terminal.emitData('\x1b[1;1Hxy')
+    await vi.advanceTimersByTimeAsync(20)
+
+    expect((await operation.done).viewport).toBe('xy')
+  })
+
+  it('ignores a retraction that arrives after the send settled', async () => {
+    vi.useFakeTimers()
+    const terminal = new FakeTerminal()
+    const session = makeSession(terminal, new FakeInspector(), config())
+    await initialize(session, terminal)
+
+    const operation = session.startSend({ text: 'x', submit: true })
+    const operationInternal = operation as unknown as {
+      retract(count: number): void
+      settle(reason: 'timeout', status: TerminalSessionStatus, inherited: boolean): void
+    }
+    operationInternal.settle('timeout', { kind: 'running' }, false)
+    operationInternal.retract(2)
+
+    await expect(operation.done).resolves.toMatchObject({ viewport: '' })
+  })
+
   it('does not reuse a pre-write stdin wait as post-write readiness', async () => {
     vi.useFakeTimers()
     const terminal = new FakeTerminal()

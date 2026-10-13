@@ -87,7 +87,7 @@ afterEach(() => { vi.useRealTimers() })
 function makeHandle(pty: FakePty, inspector: ProcessInspector, graceMs: number): LocalTerminalHandle {
   // The suite pins POSIX signalling semantics deterministically on every host;
   // the win32 branches get their own platform-explicit tests below.
-  return new LocalTerminalHandle(pty.asPty(), inspector, graceMs, 'linux')
+  return new LocalTerminalHandle(pty.asPty(), inspector, graceMs, { rows: 24, cols: 80 }, 'linux')
 }
 
 describe('LocalTerminalHandle', () => {
@@ -430,8 +430,20 @@ describe('LocalTerminalHandle cursor-position queries', () => {
 
     pty.emitData(`PS /workspace> ${cursorQuery}`)
 
-    expect(pty.writes).toEqual(['\x1b[1;1R'])
+    // The report names where the child's own output left the cursor, so its
+    // redraws address the line it actually occupies.
+    expect(pty.writes).toEqual(['\x1b[1;15R'])
     expect(Buffer.concat(chunks).toString('utf8')).toBe(`PS /workspace> ${cursorQuery}`)
+  })
+
+  it('follows later output and cursor addressing before answering', () => {
+    const pty = new FakePty()
+    makeHandle(pty, new FakeInspector(), 10)
+
+    pty.emitData('one\r\ntwo\x1b[7;3H')
+    pty.emitData(cursorQuery)
+
+    expect(pty.writes).toEqual(['\x1b[7;3R'])
   })
 
   it('answers a query split across two output chunks', () => {
@@ -474,7 +486,7 @@ describe('LocalTerminalHandle on Windows', () => {
 
   it('leaves the cursor-position query to ConPTY', () => {
     const pty = new FakePty()
-    new LocalTerminalHandle(pty.asPty(), new FakeInspector(), 10, win32)
+    new LocalTerminalHandle(pty.asPty(), new FakeInspector(), 10, { rows: 24, cols: 80 }, win32)
 
     pty.emitData('\x1b[6n')
 
@@ -484,14 +496,14 @@ describe('LocalTerminalHandle on Windows', () => {
   it('delivers SIGINT as a Ctrl-C input write without inspector signalling', async () => {
     const pty = new FakePty()
     const inspector = new FakeInspector()
-    const handle = new LocalTerminalHandle(pty.asPty(), inspector, 10, win32)
+    const handle = new LocalTerminalHandle(pty.asPty(), inspector, 10, { rows: 24, cols: 80 }, win32)
     await expect(handle.signalForeground('SIGINT')).resolves.toBe(456)
     expect(pty.writes).toEqual(['\x03'])
     expect(inspector.groups).toEqual([])
   })
 
   it('rejects SIGTSTP and SIGHUP as unavailable on Windows', async () => {
-    const handle = new LocalTerminalHandle(new FakePty().asPty(), new FakeInspector(), 10, win32)
+    const handle = new LocalTerminalHandle(new FakePty().asPty(), new FakeInspector(), 10, { rows: 24, cols: 80 }, win32)
     await expect(handle.signalForeground('SIGTSTP')).rejects.toThrow('unsupported on Windows')
     await expect(handle.signalForeground('SIGHUP')).rejects.toThrow('unsupported on Windows')
   })
@@ -499,7 +511,7 @@ describe('LocalTerminalHandle on Windows', () => {
   it('routes SIGTERM through the inspector tree with the pseudo foreground group', async () => {
     const pty = new FakePty()
     const inspector = new FakeInspector()
-    const handle = new LocalTerminalHandle(pty.asPty(), inspector, 10, win32)
+    const handle = new LocalTerminalHandle(pty.asPty(), inspector, 10, { rows: 24, cols: 80 }, win32)
     await expect(handle.signalForeground('SIGTERM')).resolves.toBe(456)
     expect(inspector.groups).toEqual([[456, 'SIGTERM']])
     expect(pty.writes).toEqual([])
@@ -508,7 +520,7 @@ describe('LocalTerminalHandle on Windows', () => {
   it('still refuses to SIGKILL the terminal shell on Windows', async () => {
     const pty = new FakePty()
     const inspector = new FakeInspector()
-    const handle = new LocalTerminalHandle(pty.asPty(), inspector, 10, win32)
+    const handle = new LocalTerminalHandle(pty.asPty(), inspector, 10, { rows: 24, cols: 80 }, win32)
     inspector.pgid = handle.pid
     await expect(handle.signalForeground('SIGKILL')).rejects.toThrow('terminate the terminal session')
   })
@@ -518,7 +530,7 @@ describe('LocalTerminalHandle on Windows', () => {
     const pty = new FakePty()
     const inspector = new FakeInspector()
     inspector.alive.add(123)
-    const handle = new LocalTerminalHandle(pty.asPty(), inspector, 10, win32)
+    const handle = new LocalTerminalHandle(pty.asPty(), inspector, 10, { rows: 24, cols: 80 }, win32)
     const quiescent = handle.terminate()
     await vi.advanceTimersByTimeAsync(5)
     expect(inspector.processes).toEqual([[123, 'SIGTERM']])
@@ -536,7 +548,7 @@ describe('LocalTerminalHandle on Windows', () => {
     const inspector = new FakeInspector()
     inspector.alive.add(123)
     inspector.removeOnSignal = false
-    const handle = new LocalTerminalHandle(pty.asPty(), inspector, 10, win32)
+    const handle = new LocalTerminalHandle(pty.asPty(), inspector, 10, { rows: 24, cols: 80 }, win32)
     const failed = expect(handle.terminate()).rejects.toThrow('surviving pid: 123')
     await vi.advanceTimersByTimeAsync(25)
     await failed
@@ -551,7 +563,7 @@ describe('LocalTerminalHandle on Windows', () => {
     const pty = new FakePty()
     const inspector = new FakeInspector()
     inspector.alive.add(123)
-    const handle = new LocalTerminalHandle(pty.asPty(), inspector, 10, win32)
+    const handle = new LocalTerminalHandle(pty.asPty(), inspector, 10, { rows: 24, cols: 80 }, win32)
     pty.emitExit()
     await handle.terminate()
     expect(inspector.processes).toEqual([])
@@ -562,7 +574,7 @@ describe('LocalTerminalHandle on Windows', () => {
     const pty = new FakePty()
     const inspector = new FakeInspector()
     inspector.root = undefined
-    const handle = new LocalTerminalHandle(pty.asPty(), inspector, 10, win32)
+    const handle = new LocalTerminalHandle(pty.asPty(), inspector, 10, { rows: 24, cols: 80 }, win32)
     await handle.terminate()
     expect(pty.kills).toHaveLength(1)
     expect(inspector.processes).toEqual([])

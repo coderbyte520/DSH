@@ -39,6 +39,45 @@ describe('TerminalSanitizer', () => {
     expect(sanitizer.push('dsh> ')).toEqual({ text: 'dsh> ', prompt: false, promptTail: 'dsh> ' })
   })
 
+  it('retracts a redrawn line instead of retaining every render', () => {
+    const sanitizer = new TerminalSanitizer(64)
+    expect(sanitizer.push('dsh> ab')).toEqual({ text: 'dsh> ab', prompt: false })
+    // A line editor repaints the whole line: the consumer drops the render it
+    // already has and keeps only the newest one.
+    expect(sanitizer.push('\x1b[1;1Hdsh> abc')).toEqual({ text: 'dsh> abc', prompt: false, retract: 7 })
+    // Addressing a column rewrites from there.
+    expect(sanitizer.push('\x1b[1;7HZ')).toEqual({ text: 'Z', prompt: false, retract: 2 })
+  })
+
+  it('tracks cursor addressing, erase-to-end, and line resets', () => {
+    const sanitizer = new TerminalSanitizer(64)
+    expect(sanitizer.push('abcdef')).toEqual({ text: 'abcdef', prompt: false })
+    // The cursor sits at column 3, so erase-to-end drops the last four cells.
+    expect(sanitizer.push('\x1b[1;3H\x1b[K')).toEqual({ text: '', prompt: false, retract: 4 })
+    expect(sanitizer.push('xy')).toEqual({ text: 'xy', prompt: false })
+    expect(sanitizer.push('\r\nnext')).toEqual({ text: '\nnext', prompt: false })
+    // Addressing without a column names column 1, so the whole line is replaced.
+    expect(sanitizer.push('\x1b[H!')).toEqual({ text: '!', prompt: false, retract: 4 })
+  })
+
+  it('fills skipped cells and ignores addressing without a column', () => {
+    const sanitizer = new TerminalSanitizer(64)
+    expect(sanitizer.push('ab\x1b[1;5Hc')).toEqual({ text: 'ab  c', prompt: false })
+    expect(sanitizer.push('\x1b[3Hz')).toEqual({ text: 'z', prompt: false, retract: 5 })
+    expect(sanitizer.push('\x1b[;Hz')).toEqual({ text: 'z', prompt: false, retract: 1 })
+  })
+
+  it('erases nothing when the cursor already sits at the end of the line', () => {
+    const sanitizer = new TerminalSanitizer(64)
+    expect(sanitizer.push('ab\x1b[K')).toEqual({ text: 'ab', prompt: false })
+  })
+
+  it('counts filled cells towards the reported prompt tail', () => {
+    const sanitizer = new TerminalSanitizer(64)
+    expect(sanitizer.push('\x1b]133;D;0\x07ab\x1b[1;5Hc'))
+      .toEqual({ text: 'ab  c', prompt: true, promptTail: 'ab  c' })
+  })
+
   it('bounds and discards unterminated control sequences through their terminators', () => {
     const oscBel = new TerminalSanitizer(8)
     expect(oscBel.push(`\x1b]0;${'x'.repeat(16)}`)).toEqual({ text: '', prompt: false })
