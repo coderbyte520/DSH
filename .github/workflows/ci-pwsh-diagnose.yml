@@ -130,7 +130,7 @@ jobs:
           # The provider's pwsh prompt function: OSC 133;D;<status> then BEL,
           # followed by the controlled prompt text.
           PROMPT_SETUP = (
-              "function prompt { [Console]::Write([char]27 + ']133;D;' + [int]$LASTEXITCODE + [char]7); 'dsh> ' }\n"
+              "function prompt { [Console]::Write([char]27 + ']133;D;' + [int]$LASTEXITCODE + [char]7); 'dsh> ' }\r"
           )
           MARKER = b'\x1b]133;D;'
 
@@ -213,11 +213,11 @@ jobs:
               drain(1.5)
               os.write(fd, PROMPT_SETUP.encode())
               drain(0.5)
-              os.write(fd, b'Write-Output "first-ok"\n')
+              os.write(fd, b'Write-Output "first-ok"\r')
               drain(settle_seconds)
-              os.write(fd, b'Write-Output "second-ok"\n')
+              os.write(fd, b'Write-Output "second-ok"\r')
               drain(settle_seconds)
-              os.write(fd, b'exit\n')
+              os.write(fd, b'exit\r')
               drain(0.5)
               os.close(fd)
               return bytes(transcript)
