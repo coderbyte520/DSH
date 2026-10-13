@@ -134,7 +134,53 @@ jobs:
           )
           MARKER = b'\x1b]133;D;'
 
-          def run_session(env_overrides, answer_cursor_query, window=None, settle_seconds=4.0):
+          class Cursor:
+              """Row/column of a line-oriented child: printable runs, CR, LF, backspace."""
+
+              def __init__(self, rows, cols):
+                  self.rows = rows
+                  self.cols = cols
+                  self.row = 1
+                  self.col = 1
+
+              def feed(self, text):
+                  index = 0
+                  while index < len(text):
+                      char = text[index]
+                      if char == '\x1b':
+                          index = self.skip_escape(text, index)
+                          continue
+                      if char == '\n':
+                          self.row += 1
+                          self.col = 1
+                      elif char == '\r':
+                          self.col = 1
+                      elif char == '\b':
+                          self.col = max(1, self.col - 1)
+                      elif char >= ' ':
+                          self.col += 1
+                          if self.col > self.cols:
+                              self.col = 1
+                              self.row += 1
+                      index += 1
+
+              def skip_escape(self, text, index):
+                  if index + 1 >= len(text):
+                      return index + 1
+                  kind = text[index + 1]
+                  if kind == ']':
+                      end = index + 2
+                      while end < len(text) and text[end] != '\x07':
+                          end += 1
+                      return end + 1
+                  if kind == '[':
+                      end = index + 2
+                      while end < len(text) and not ('@' <= text[end] <= '~'):
+                          end += 1
+                      return end + 1
+                  return index + 2
+
+          def run_session(env_overrides, mode, window=None, settle_seconds=4.0):
               env = os.environ.copy()
               env.update(env_overrides)
               pid, fd = pty.fork()
@@ -143,6 +189,7 @@ jobs:
               if window is not None:
                   rows, cols = window
                   fcntl.ioctl(fd, termios.TIOCSWINSZ, struct.pack('HHHH', rows, cols, 0, 0))
+              cursor = Cursor(*(window if window is not None else (24, 80)))
               transcript = bytearray()
 
               def drain(seconds):
@@ -158,8 +205,10 @@ jobs:
                       if not data:
                           break
                       transcript.extend(data)
-                      if answer_cursor_query and b'\x1b[6n' in data:
-                          os.write(fd, b'\x1b[1;1R')
+                      cursor.feed(data.decode('utf-8', errors='replace'))
+                      if b'\x1b[6n' in data:
+                          report = f'\x1b[{cursor.row};{cursor.col}R' if mode == 'tracked' else '\x1b[1;1R'
+                          os.write(fd, report.encode())
 
               drain(1.5)
               os.write(fd, PROMPT_SETUP.encode())
@@ -178,10 +227,8 @@ jobs:
           # axis PSReadLine's renderer divides by.
           PROVIDER = {'TERM': 'dumb', 'NO_COLOR': '1'}
           CASES = [
-              ('no window, no replies', {}, False, None),
-              ('window 40x160, no replies (provider)', PROVIDER, False, (40, 160)),
-              ('window 40x160, cursor replies', PROVIDER, True, (40, 160)),
-              ('no window, cursor replies', PROVIDER, True, None),
+              ('window 40x160, home replies', PROVIDER, 'home', (40, 160)),
+              ('window 40x160, tracked replies', PROVIDER, 'tracked', (40, 160)),
           ]
           for label, overrides, answers, window in CASES:
               transcript = run_session(overrides, answers, window)
@@ -192,13 +239,15 @@ jobs:
               print('prompt markers:', transcript.count(MARKER))
               print('first submission executed:', b'first-ok' in transcript)
               print('second submission executed:', b'second-ok' in transcript)
+              print('first-ok echoes:', transcript.count(b'first-ok'))
+              print('prompt setup echoes:', transcript.count(b'[char]27'))
               print('transcript:', repr(transcript[:1200]))
           PY
 
       - name: Summarize what the transcript contains
         continue-on-error: true
         run: |
-          grep -E '^(=== |total bytes|cursor queries|PSReadLine crash|prompt markers|first submission|second submission)' pwsh-pty-transcript.txt || true
+          grep -E '^(=== |total bytes|cursor queries|PSReadLine crash|prompt markers|first submission|second submission|first-ok echoes|prompt setup echoes)' pwsh-pty-transcript.txt || true
 
       - uses: actions/upload-artifact@v4
         with:
