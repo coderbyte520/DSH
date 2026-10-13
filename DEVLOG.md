@@ -114,6 +114,16 @@
 - **GitHub Actions 被计费阻断（2026-10-13）**：私有仓库的动作额度用尽，作业在启动前就被拒（"The job was not started because recent account payments have failed or your spending limit needs to be increased"）——`python runtime / node24-linux-x64` 因此失败，随后一次诊断跑（38332267306）在 1 秒内被拒且不产出 artifact。需要账户侧付款/提高限额，或把仓库转为公开（公开仓库的动作免费），否则 CI 不再提供任何信号。
 - 本仓库没有分支保护（私有 + 免费计划），所以"必需检查"仍无法真正启用；契约靠 `all-checks-passed` 聚合门与本地测试维持，而不是靠 GitHub 强制。
 
+## 2026-10-13 · 仓库转公开后的第一次完整 CI
+
+仓库改为 public 后 Actions 恢复，重新触发 `0d63713` 的那一轮（运行 `38335527564`）全部作业都真的跑起来了。结果：`node 24 / static`、`node 22.19`、`node 26`、`python 3.10`、python runtime 三条（含此前被计费挡住的 `node24-linux-x64`）、`windows node 24 / wine blocking` 全绿；红的是 `node 24 / coverage`、`node 24 / snapshots and artifacts` 与聚合门。**行内命令已在 `terminal-bash` 的 pwsh 真实套件上验证修复效果**：
+
+- 覆盖率车道里 `tool-pwsh-persistent/loader-composition` 那条**已转绿**——DSR 应答让 pwsh 在 Linux 上真正跑起来。快照车道里 `persistent-pwsh-tool-turn` 的 `tool/result` 现在两侧都是 `PWSH_OK`（修复前 Linux 刷新出的是 `<response clipped>…`），剩下的差异只有一条新增的 `user/message` 运行时上下文快照事件以及随之 +1 的 `sourceEventSeqs`。
+- 覆盖率车道仍剩 3 条：`terminal-bash/tests/local.spec.ts` 的两条 pwsh 真实 shell 用例，以及 `typert/generator` 的 `type-model` 快照。
+- 这两条 pwsh 用例的失败形态已换：不再是"命令不执行"，而是 **PSReadLine 的重绘风暴**。探针（`pwsh-node-pty-probe.txt`）给出定量证据：应答 DSR 后引导行确实执行（`keep=ok` 独占一行、OSC 标记 2 个、光标查询 6 次），但 PSReadLine 每敲一个字符就用 `ESC[1;1H` 绝对定位重绘整行（缓冲区前缀逐字递增），而 `terminal-bash` 的清洗器按"只剥转义、按序追加"的契约把每次重绘都当文本留下，于是 viewport 变成重绘历史。Windows 不受影响是因为 ConPTY 自带模拟器，发给客户端的是渲染后的流。
+- 已排除的旁路：`-NonInteractive` 更糟（29 KB、137 次查询、84 次引导行重绘）；bracketed paste 未被 pwsh 启用（`ESC[?2004h` 从未出现），手工包裹后反而把 `keep=ok` 回声从 3 次增到 6 次。
+- 结论：剩下这两条属于**后端渲染层**，不是传输层。可行且最小的修法是给 `TerminalSanitizer` 增加一个行内渲染模型（认 CR、`ESC[…H` 同列/同行的覆盖语义与 `EL` 擦除），使重绘塌缩成"用户实际看到的那一行"；它只会在子进程发出光标定位序列时生效，bash 路径不触发。属于独立改动，需再次用 Linux 套件验收。
+
 ## 2026-10-12 · 阶段一：verifiable-reward 机械打分落地
 
 **目标**：让一次运行的可观察事实（执行的命令、退出码、测试通过/失败数）变成可回放、可筛选的持久分数，为后续采样与训练提供不依赖模型判断的奖励信号。
