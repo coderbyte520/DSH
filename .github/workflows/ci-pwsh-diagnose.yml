@@ -241,13 +241,17 @@ jobs:
               print('second submission executed:', b'second-ok' in transcript)
               print('first-ok echoes:', transcript.count(b'first-ok'))
               print('prompt setup echoes:', transcript.count(b'[char]27'))
+              print('carriage returns:', transcript.count(b'\r'))
+              print('erase-to-end-of-line:', transcript.count(b'\x1b[K'))
+              second = transcript.find(b'first-ok', transcript.find(b'first-ok') + 1)
+              print('before second echo:', repr(transcript[max(0, second - 60):second + 20]))
               print('transcript:', repr(transcript[:1200]))
           PY
 
       - name: Summarize what the transcript contains
         continue-on-error: true
         run: |
-          grep -E '^(=== |total bytes|cursor queries|PSReadLine crash|prompt markers|first submission|second submission|first-ok echoes|prompt setup echoes)' pwsh-pty-transcript.txt || true
+          grep -E '^(=== |total bytes|cursor queries|PSReadLine crash|prompt markers|first submission|second submission|first-ok echoes|prompt setup echoes|carriage returns|erase-to-end-of-line|before second echo)' pwsh-pty-transcript.txt || true
 
       - uses: actions/upload-artifact@v4
         with:
