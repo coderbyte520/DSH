@@ -107,6 +107,7 @@
 - 快照漂移已定位到具体用例（`test:snapshot` 的 `pwsh-tool-turn` header 与两处 `session.jsonl`、`web browser snapshot` 的 `image-display`／`hmr-live`），但 CI 日志把断言正文截断，且本机是 Windows——快照车道在 Windows 上有 18 处环境性失败，而 fixture 要求能在 macOS/Linux 重放。因此"修复或重录"必须在 Linux 侧做：可行路径是加一个手动触发的诊断作业，把实际输出作为 artifact 传上来，再决定是修代码还是走 `test:snapshot:refresh`。
 - A2 的缓存播种要等本改动落到 `main` 后才会对 PR 车道生效。
 - 失败面剩三处：快照漂移（需按四类分别决定重录或查结算谓词）、pwsh 的终端查询阻塞（根因已确认，等 PTY 层修复决策）、64 MiB 边界用例的 runner 负载超时。
+- **GitHub Actions 被计费阻断（2026-10-13）**：私有仓库的动作额度用尽，作业在启动前就被拒（"The job was not started because recent account payments have failed or your spending limit needs to be increased"）——`python runtime / node24-linux-x64` 因此失败，随后一次诊断跑（38332267306）在 1 秒内被拒且不产出 artifact。需要账户侧付款/提高限额，或把仓库转为公开（公开仓库的动作免费），否则 CI 不再提供任何信号。
 - 本仓库没有分支保护（私有 + 免费计划），所以"必需检查"仍无法真正启用；契约靠 `all-checks-passed` 聚合门与本地测试维持，而不是靠 GitHub 强制。
 
 ## 2026-10-12 · 阶段一：verifiable-reward 机械打分落地
