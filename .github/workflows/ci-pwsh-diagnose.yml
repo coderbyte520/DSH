@@ -69,7 +69,8 @@ jobs:
       # The provider's own transport: node-pty, the resolved window size, and
       # the provider's env. A bare pseudo-terminal blocks pwsh on its cursor
       # query, so the question this step answers is whether that reaches the
-      # transport the harness actually spawns.
+      # transport the harness actually spawns, and whether answering the query
+      # at that layer is enough to run the prompt protocol.
       - name: Probe pwsh through node-pty (the provider transport)
         continue-on-error: true
         shell: bash
@@ -78,31 +79,42 @@ jobs:
           pnpm --filter @vreal/dsh-subprocess-local exec node --input-type=module - <<'JS' 2>&1 | tee pwsh-node-pty-probe.txt
           import * as nodePty from 'node-pty'
 
-          const term = nodePty.spawn('pwsh', ['-NoLogo', '-NoProfile'], {
-            name: 'xterm-256color',
-            cols: 160,
-            rows: 40,
-            cwd: process.cwd(),
-            env: { ...process.env, TERM: 'dumb', NO_COLOR: '1' },
-          })
-          let out = ''
-          term.onData(data => { out += data })
           const wait = milliseconds => new Promise(resolve => setTimeout(resolve, milliseconds))
 
-          await wait(2000)
-          console.log('bootstrap bytes:', out.length, JSON.stringify(out.slice(0, 200)))
-          term.write("function prompt { [Console]::Write([char]27 + ']133;D;' + [int]$LASTEXITCODE + [char]7); 'dsh> ' }\r")
-          await wait(1000)
-          term.write('Write-Output "first-ok"\r')
-          await wait(3000)
-          term.write('Write-Output "second-ok"\r')
-          await wait(3000)
-          console.log('cursor queries:', (out.match(/\x1b\[6n/g) ?? []).length)
-          console.log('prompt markers:', (out.match(/\x1b\]133;D;/g) ?? []).length)
-          console.log('first submission executed:', out.includes('first-ok'))
-          console.log('second submission executed:', out.includes('second-ok'))
-          console.log('tail:', JSON.stringify(out.slice(-600)))
-          term.kill()
+          async function run(answerCursorQuery) {
+            const term = nodePty.spawn('pwsh', ['-NoLogo', '-NoProfile'], {
+              name: 'xterm-256color',
+              cols: 160,
+              rows: 40,
+              cwd: process.cwd(),
+              env: { ...process.env, TERM: 'dumb', NO_COLOR: '1' },
+            })
+            let out = ''
+            term.onData((data) => {
+              out += data
+              if (answerCursorQuery && data.includes('\x1b[6n')) term.write('\x1b[1;1R')
+            })
+
+            await wait(2000)
+            console.log('bootstrap bytes:', out.length, JSON.stringify(out.slice(0, 200)))
+            term.write("function prompt { [Console]::Write([char]27 + ']133;D;' + [int]$LASTEXITCODE + [char]7); 'dsh> ' }\r")
+            await wait(1000)
+            term.write('Write-Output "first-ok"\r')
+            await wait(3000)
+            term.write('Write-Output "second-ok"\r')
+            await wait(3000)
+            console.log('cursor queries:', (out.match(/\x1b\[6n/g) ?? []).length)
+            console.log('prompt markers:', (out.match(/\x1b\]133;D;/g) ?? []).length)
+            console.log('first submission executed:', out.includes('first-ok'))
+            console.log('second submission executed:', out.includes('second-ok'))
+            console.log('tail:', JSON.stringify(out.slice(-600)))
+            term.kill()
+          }
+
+          console.log('=== node-pty, no cursor replies ===')
+          await run(false)
+          console.log('=== node-pty, cursor replies ===')
+          await run(true)
           JS
 
       # The same submissions against a bare pseudo-terminal, once per
