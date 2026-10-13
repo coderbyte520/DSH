@@ -81,6 +81,14 @@ jobs:
 
           const wait = milliseconds => new Promise(resolve => setTimeout(resolve, milliseconds))
 
+          /** Drop control sequences and normalize newlines the way the sanitizer does. */
+          const stripEscapes = (text) => text
+            .replace(/\x1b\][^\x07\x1b]*(?:\x07|\x1b\\)/g, '')
+            .replace(/\x1b\[[0-9;?]*[ -/]*[@-~]/g, '')
+            .replace(/\x1b[@-Z\\-_]/g, '')
+            .replace(/\r\n?/g, '\n')
+            .replace(/\x07/g, '')
+
           /** Row/column of a line-oriented child: printable runs, CR, LF, backspace. */
           const createCursor = (cols) => {
             let row = 1
@@ -155,6 +163,12 @@ jobs:
             const cursorMoves = [...out.matchAll(/\x1b\[(\d+);(\d+)H/g)].map(match => `${match[1]};${match[2]}`)
             console.log('cursor moves:', [...new Set(cursorMoves)].join(' ') || '(none)')
             console.log('cursor move count:', cursorMoves.length)
+            // What a consumer sees after the last owned prompt marker: the text
+            // readiness compares against the controlled prompt.
+            const lastMarker = out.lastIndexOf('\x1b]133;D;')
+            const afterMarker = lastMarker < 0 ? '' : out.slice(lastMarker)
+            console.log('tail after last marker:', JSON.stringify(afterMarker.slice(0, 120)))
+            console.log('printable tail after last marker:', JSON.stringify(stripEscapes(afterMarker).slice(0, 40)))
             console.log('tail:', JSON.stringify(out.slice(-800)))
             term.kill()
           }
