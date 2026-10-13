@@ -24,6 +24,13 @@ function signalName(number: number | undefined): NodeJS.Signals | null {
   return null
 }
 
+/** The cursor-position query (device status report 6) a terminal client answers. */
+const CURSOR_POSITION_QUERY = '\x1b[6n'
+/** The report sent back: row 1, column 1. */
+const CURSOR_POSITION_REPORT = '\x1b[1;1R'
+/** Characters of the previous chunk kept so a query split across chunks still matches. */
+const QUERY_SCAN_OVERLAP = CURSOR_POSITION_QUERY.length - 1
+
 /**
  * A local terminal whose process-session ownership stays below the PTY backend.
  * The seam's terminate() promise — no write, inspection, or signal in flight
@@ -42,6 +49,8 @@ export class LocalTerminalHandle implements SubprocessTerminalHandle {
   private readonly exitDisposable: IDisposable
   private cleanup: Promise<void> | undefined
   private exited = false
+  /** Trailing output kept so a cursor-position query split across chunks still matches. */
+  private scannedTail = ''
   private trackedDescendants: ProcessIdentity[] = []
   /** The spawned shell's start identity; scans stop adopting members once the root pid no longer carries it. */
   private readonly rootIdentity: ProcessIdentity | undefined
@@ -61,7 +70,10 @@ export class LocalTerminalHandle implements SubprocessTerminalHandle {
     this.pid = terminal.pid
     this.rootIdentity = inspector.processTree(this.pid).find(member => member.pid === this.pid)
     this.done = this.outcome.promise
-    this.dataDisposable = terminal.onData((data) => { this.output.write(Buffer.from(data, 'utf8')) })
+    this.dataDisposable = terminal.onData((data) => {
+      this.answerCursorQuery(data)
+      this.output.write(Buffer.from(data, 'utf8'))
+    })
     this.exitDisposable = terminal.onExit(({ exitCode, signal: exitSignal }) => {
       if (this.exited) return
       this.exited = true
@@ -71,6 +83,25 @@ export class LocalTerminalHandle implements SubprocessTerminalHandle {
         signal: signalName(exitSignal),
       })
     })
+  }
+
+  /**
+   * Answer the cursor-position query a child blocks on. On POSIX a node-pty
+   * terminal is a bare kernel PTY with no emulator above it, so a child that
+   * asks where the cursor is — PowerShell does, before it reads any input —
+   * waits for a report that never arrives and never reaches its input loop.
+   * The report always names the home position: this transport holds no cursor
+   * model, and its consumer renders retained text rather than a screen.
+   * Windows allocates ConPTY, which is the emulator and answers for itself.
+   * @param data - one decoded output chunk from the child.
+   */
+  private answerCursorQuery(data: string): void {
+    if (this.platform === 'win32') return
+    const scanned = this.scannedTail + data
+    this.scannedTail = scanned.slice(-QUERY_SCAN_OVERLAP)
+    if (!scanned.includes(CURSOR_POSITION_QUERY)) return
+    if (this.exited) return
+    this.terminal.write(CURSOR_POSITION_REPORT)
   }
 
   // node-pty writes synchronously; the seam returns a promise for remote transports.

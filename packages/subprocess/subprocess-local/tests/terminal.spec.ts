@@ -419,8 +419,67 @@ describe('LocalTerminalHandle', () => {
   })
 })
 
+describe('LocalTerminalHandle cursor-position queries', () => {
+  const cursorQuery = '\x1b[6n'
+
+  it('answers the query a bare PTY child blocks on without dropping its bytes', () => {
+    const pty = new FakePty()
+    const handle = makeHandle(pty, new FakeInspector(), 10)
+    const chunks: Buffer[] = []
+    handle.output.on('data', (chunk: Buffer) => { chunks.push(chunk) })
+
+    pty.emitData(`PS /workspace> ${cursorQuery}`)
+
+    expect(pty.writes).toEqual(['\x1b[1;1R'])
+    expect(Buffer.concat(chunks).toString('utf8')).toBe(`PS /workspace> ${cursorQuery}`)
+  })
+
+  it('answers a query split across two output chunks', () => {
+    const pty = new FakePty()
+    makeHandle(pty, new FakeInspector(), 10)
+
+    pty.emitData('\x1b')
+    expect(pty.writes).toEqual([])
+    pty.emitData('[6n')
+
+    expect(pty.writes).toEqual(['\x1b[1;1R'])
+  })
+
+  it('writes nothing while output carries no query', () => {
+    const pty = new FakePty()
+    const handle = makeHandle(pty, new FakeInspector(), 10)
+    handle.output.resume()
+
+    pty.emitData('\x1b[?1h\x1b=plain output\r\n')
+    pty.emitData('\x1b[6')
+
+    expect(pty.writes).toEqual([])
+  })
+
+  it('does not answer a query that arrives after the child exited', () => {
+    const pty = new FakePty()
+    const handle = makeHandle(pty, new FakeInspector(), 10)
+    handle.output.on('error', () => {})
+    handle.output.resume()
+    pty.emitExit()
+
+    pty.emitData(cursorQuery)
+
+    expect(pty.writes).toEqual([])
+  })
+})
+
 describe('LocalTerminalHandle on Windows', () => {
   const win32 = 'win32' as NodeJS.Platform
+
+  it('leaves the cursor-position query to ConPTY', () => {
+    const pty = new FakePty()
+    new LocalTerminalHandle(pty.asPty(), new FakeInspector(), 10, win32)
+
+    pty.emitData('\x1b[6n')
+
+    expect(pty.writes).toEqual([])
+  })
 
   it('delivers SIGINT as a Ctrl-C input write without inspector signalling', async () => {
     const pty = new FakePty()

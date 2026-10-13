@@ -93,6 +93,8 @@
 
 即：当前 ubuntu 镜像上的 pwsh 7.6.6 / PSReadLine 2.4.5 在读取输入前会做一次终端查询，而 node-pty 只搬运字节、不应答任何终端查询，于是 pwsh 的 console host 阻塞；标记永不出现（工具侧 20 秒超时），就绪判定只能退化成 `inferred_idle`。修复方向（属于产品侧决策，本次未实现）：在 PTY 传输层应答终端查询（至少 DSR/CPR），或从 pwsh 引导处消除该查询。
 
+**修复（已实现，等 Linux 验收）**：在 `packages/subprocess/subprocess-local/src/terminal.ts` 的 `LocalTerminalHandle` 数据桥上应答 DSR——扫描每个解码分块中的 `ESC[6n` 并写回 `ESC[1;1R`，保留上一分块末两个字符以匹配跨分块到达的查询；`win32` 直接返回，因为那里的 ConPTY 本身就是模拟器并会自行应答（重复应答会把报告注入子进程输入）。应答用固定原位：传输层没有光标模型，消费方保留的是文本而非屏幕。这一层是唯一可修的位置——pwsh 在读取任何输入前就已阻塞，任何引导脚本都来不及执行（该结论由探针直接证实）。单元测试覆盖有查询、跨分块、无查询、退出之后、Windows 直通五种路径，`subprocess-local` 源码逐文件覆盖率仍为 100%，`duplication` 0 克隆；双语 README 与 Agent Note 已重录配对。本机 Windows 无法给出 Linux 侧证据：`persistent-pwsh-tool-turn` 快照在 Windows 上的既有漂移经 stash 对照确认与本次改动无关（改动在 win32 上是空操作），Linux 套件仍是该行为的验收路径，等 CI 恢复后由覆盖率车道与快照车道给出结论。
+
 **同一批拿到的机械问题与杂项**：
 
 - `scripts/merge-translation-pairing-driver.sh` 在 Git 索引里缺执行位（Windows 上 `core.filemode` 掩盖了它），Linux 上 `git merge` 调用该驱动直接 `Permission denied`，令 `translation-pairing-merge.spec.ts` 整文件失败。已改为 `100755`（`git update-index --chmod=+x`，约 5 个失败用例随之消失，且是确定性修复）。
