@@ -80,6 +80,11 @@ jobs:
           import * as nodePty from 'node-pty'
 
           const wait = milliseconds => new Promise(resolve => setTimeout(resolve, milliseconds))
+          // The terminal-bash pwsh bootstrap, byte for byte: the encoding
+          // preamble plus the prompt function that emits OSC 133;D.
+          const BOOTSTRAP = '[Console]::OutputEncoding = [System.Text.UTF8Encoding]::new($false); '
+            + '$OutputEncoding = [System.Text.UTF8Encoding]::new($false); '
+            + "function prompt { [Console]::Write([char]27 + ']133;D;' + [int]$LASTEXITCODE + [char]7); 'dsh> ' }"
 
           async function run(answerCursorQuery) {
             const term = nodePty.spawn('pwsh', ['-NoLogo', '-NoProfile'], {
@@ -96,18 +101,19 @@ jobs:
             })
 
             await wait(2000)
-            console.log('bootstrap bytes:', out.length, JSON.stringify(out.slice(0, 200)))
-            term.write("function prompt { [Console]::Write([char]27 + ']133;D;' + [int]$LASTEXITCODE + [char]7); 'dsh> ' }\r")
-            await wait(1000)
-            term.write('Write-Output "first-ok"\r')
+            term.write(`${BOOTSTRAP}\r`)
             await wait(3000)
-            term.write('Write-Output "second-ok"\r')
+            const afterBootstrap = out
+            term.write('Write-Output "keep=ok"\r')
             await wait(3000)
+            console.log('total bytes:', out.length)
             console.log('cursor queries:', (out.match(/\x1b\[6n/g) ?? []).length)
             console.log('prompt markers:', (out.match(/\x1b\]133;D;/g) ?? []).length)
-            console.log('first submission executed:', out.includes('first-ok'))
-            console.log('second submission executed:', out.includes('second-ok'))
-            console.log('tail:', JSON.stringify(out.slice(-600)))
+            console.log('markers after bootstrap:', (afterBootstrap.match(/\x1b\]133;D;/g) ?? []).length)
+            console.log('bootstrap echo repeats:', (out.match(/function prompt/g) ?? []).length)
+            console.log('keep=ok echoes:', (out.match(/keep=ok/g) ?? []).length)
+            console.log('keep=ok on its own line:', /[\r\n]keep=ok[\r\n]/.test(out))
+            console.log('tail:', JSON.stringify(out.slice(-800)))
             term.kill()
           }
 
