@@ -86,8 +86,8 @@ jobs:
             + '$OutputEncoding = [System.Text.UTF8Encoding]::new($false); '
             + "function prompt { [Console]::Write([char]27 + ']133;D;' + [int]$LASTEXITCODE + [char]7); 'dsh> ' }"
 
-          async function run(answerCursorQuery) {
-            const term = nodePty.spawn('pwsh', ['-NoLogo', '-NoProfile'], {
+          async function run(label, args, answerCursorQuery) {
+            const term = nodePty.spawn('pwsh', args, {
               name: 'xterm-256color',
               cols: 160,
               rows: 40,
@@ -106,6 +106,7 @@ jobs:
             const afterBootstrap = out
             term.write('Write-Output "keep=ok"\r')
             await wait(3000)
+            console.log(`=== ${label} ===`)
             console.log('total bytes:', out.length)
             console.log('cursor queries:', (out.match(/\x1b\[6n/g) ?? []).length)
             console.log('prompt markers:', (out.match(/\x1b\]133;D;/g) ?? []).length)
@@ -117,10 +118,9 @@ jobs:
             term.kill()
           }
 
-          console.log('=== node-pty, no cursor replies ===')
-          await run(false)
-          console.log('=== node-pty, cursor replies ===')
-          await run(true)
+          await run('no cursor replies', ['-NoLogo', '-NoProfile'], false)
+          await run('cursor replies', ['-NoLogo', '-NoProfile'], true)
+          await run('cursor replies, -NonInteractive', ['-NoLogo', '-NoProfile', '-NonInteractive'], true)
           JS
 
       # The same submissions against a bare pseudo-terminal, once per
