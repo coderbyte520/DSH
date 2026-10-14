@@ -8,6 +8,12 @@
  * @module @vreal/dsh-tool-ralph-evaluated
  */
 
+// Deliberate clone: this tool mirrors `workflow/tool-ralph`'s fixed-workflow
+// plumbing so the two stay directly comparable — the only difference is where
+// termination authority lives. The evaluated-Ralph Agent Note records that
+// trade-off; extracting the shared plumbing is a separate decision.
+/* jscpd:ignore-start */
+
 import type { Context } from '@vreal/cordis'
 import z from '@vreal/schemastery'
 import type { ContentBlock } from '@vreal/dsh-llm'
@@ -570,3 +576,5 @@ export function apply(ctx: Context, config: Config): void {
     presentResult,
   }))
 }
+
+/* jscpd:ignore-end */

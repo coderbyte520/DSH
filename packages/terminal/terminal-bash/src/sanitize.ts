@@ -14,6 +14,13 @@ export interface SanitizedChunk {
   prompt: boolean
   /** Printable text after the latest owned marker in this chunk. */
   promptTail?: string
+  /**
+   * Characters at the end of already-emitted text that this chunk's `text`
+   * replaces. A child that redraws its current line addresses it with a cursor
+   * sequence; the consumer drops this many characters before appending, so the
+   * retained text is the rendered line rather than every redraw.
+   */
+  retract?: number
 }
 
 /**
@@ -27,6 +34,14 @@ export class TerminalSanitizer {
   private discardOscEscape = false
   private trailingCarriageReturn = false
   private trackingPromptTail = false
+  /** Model column (0-based) where the child's cursor stands in the current line. */
+  private cursorColumn = 0
+  /** Characters of the current line already emitted to the consumer. */
+  private emittedColumn = 0
+  /** Characters this chunk asks the consumer to drop before appending. */
+  private retracted = 0
+  /** Rendered tail of the current line after the latest owned marker. */
+  private promptTailValue = ''
 
   constructor(private readonly maxPendingBytes: number) {}
 
@@ -40,11 +55,36 @@ export class TerminalSanitizer {
     let text = ''
     let prompt = false
     let includePromptTail = this.trackingPromptTail
-    let promptTail = ''
+    this.retracted = 0
     let index = 0
     const appendText = (value: string): void => {
-      text += value
-      if (this.trackingPromptTail) promptTail += value
+      for (let offset = 0; offset < value.length; offset += 1) {
+        const char = value[offset] as string
+        if (char === '\n' || char === '\r') {
+          text += char
+          if (this.trackingPromptTail) this.appendPromptTail(char)
+          this.cursorColumn = 0
+          this.emittedColumn = 0
+          continue
+        }
+        // A redraw addresses a column the consumer already has: drop the
+        // replaced tail of this line, then write over it.
+        if (this.cursorColumn < this.emittedColumn) {
+          const replaced = this.emittedColumn - this.cursorColumn
+          this.retracted += replaced
+          this.promptTailValue = this.promptTailValue.slice(0, Math.max(0, this.promptTailValue.length - replaced))
+          this.emittedColumn = this.cursorColumn
+        } else if (this.cursorColumn > this.emittedColumn) {
+          const gap = ' '.repeat(this.cursorColumn - this.emittedColumn)
+          text += gap
+          if (this.trackingPromptTail) this.appendPromptTail(gap)
+          this.emittedColumn = this.cursorColumn
+        }
+        text += char
+        if (this.trackingPromptTail) this.appendPromptTail(char)
+        this.cursorColumn += 1
+        this.emittedColumn += 1
+      }
     }
     while (index < this.pending.length) {
       const escape = this.pending.indexOf('\x1b', index)
@@ -76,7 +116,7 @@ export class TerminalSanitizer {
           prompt = true
           this.trackingPromptTail = true
           includePromptTail = true
-          promptTail = ''
+          this.promptTailValue = ''
         }
         index = end
         continue
@@ -92,6 +132,10 @@ export class TerminalSanitizer {
           index = escape
           break
         }
+        const parameters = this.pending.slice(escape + 2, end)
+        const finalByte = this.pending[end]
+        if (finalByte === 'H' || finalByte === 'f') this.addressCursor(parameters)
+        else if (finalByte === 'K') this.eraseFromCursor()
         index = end + 1
         continue
       }
@@ -103,8 +147,30 @@ export class TerminalSanitizer {
     return {
       text: this.normalizeText(text),
       prompt,
-      ...includePromptTail ? { promptTail } : {},
+      ...includePromptTail ? { promptTail: this.promptTailValue } : {},
+      ...this.retracted > 0 ? { retract: this.retracted } : {},
     }
+  }
+
+  /** Keep a bounded rendered tail so a repainted prompt reports itself again. */
+  private appendPromptTail(value: string): void {
+    const bound = CONTROLLED_PROMPT.length + 1
+    this.promptTailValue = (this.promptTailValue + value).slice(0, bound)
+  }
+
+  /** Apply absolute cursor addressing; the row is outside a line model that retains text. */
+  private addressCursor(parameters: string): void {
+    const column = Number.parseInt(parameters.split(';')[1] ?? '', 10)
+    this.cursorColumn = Number.isSafeInteger(column) && column > 0 ? column - 1 : 0
+  }
+
+  /** Erase from the cursor to the end of the line, as `ESC[K` requests. */
+  private eraseFromCursor(): void {
+    if (this.emittedColumn <= this.cursorColumn) return
+    const erased = this.emittedColumn - this.cursorColumn
+    this.retracted += erased
+    this.promptTailValue = this.promptTailValue.slice(0, Math.max(0, this.promptTailValue.length - erased))
+    this.emittedColumn = this.cursorColumn
   }
 
   /**
@@ -117,6 +183,10 @@ export class TerminalSanitizer {
     this.discardMode = undefined
     this.discardOscEscape = false
     this.trackingPromptTail = false
+    this.promptTailValue = ''
+    this.cursorColumn = 0
+    this.emittedColumn = 0
+    this.retracted = 0
     const normalized = this.normalizeText(text)
     if (!this.trailingCarriageReturn) return normalized
     this.trailingCarriageReturn = false

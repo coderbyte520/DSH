@@ -238,6 +238,17 @@ describe('goal tool execution authority', () => {
     expect(childResult.error?.info?.code).toBe('GOAL_TOOL_AUTHORITY_REQUIRED')
   })
 
+  it('peeks completion authority without rejecting calls that carry none', async () => {
+    const { ctx, root } = await harness()
+
+    // Neither an agentless call nor a registered-but-not-initiated agent is an
+    // authenticated goal-tool execution, so the non-rejecting peek returns
+    // undefined and a wrapping policy delegates to the tool body, which raises
+    // its own authority rejection.
+    expect(toolGoal.peekTerminalAuthority(ctx, {})).toBeUndefined()
+    expect(toolGoal.peekTerminalAuthority(ctx, { agent: root.agent })).toBeUndefined()
+  })
+
   it('rejects stale agent objects and agents outside running status through the executor', async () => {
     const { ctx, root } = await harness()
     openTurn(root, { kind: 'user' })

@@ -42,7 +42,9 @@ it('boots the built plugin graph and renders a fixture session end to end', asyn
 
   // The sidebar renders from the boot graph: every inject layer activated.
   const tree = await screen.findByRole('tree', { name: 'Sessions' }, { timeout: 10_000 })
-  expect(document.querySelector('svg[viewBox="26 0 156 24"]')).not.toBeNull()
+  // The mark is the single shipped asset: the consolidated brand renders it as
+  // an image rather than the retired inline wordmark.
+  expect(document.querySelector('img[src="/logo-mark.svg"]')).not.toBeNull()
   expect(screen.queryByText('DSH Local Build')).toBeNull()
   // The compact layout dropped group session counts; the fixture workspace
   // group row renders immediately with its sessions beneath it.

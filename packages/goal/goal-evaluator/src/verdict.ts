@@ -27,6 +27,11 @@ export const goalEvaluatorVerdictSchema: ObjectJsonSchema = {
   additionalProperties: false,
 }
 
+// The provider-boundary predicates below are byte-identical to the fixed
+// workflow tools' copies on purpose: the goal certifier reuses the evaluated
+// Ralph vocabulary rather than inventing a second decoding dialect. Extraction
+// into a shared home is a decision of its own, not a silent rewrite here.
+/* jscpd:ignore-start */
 function normalizedText(value: unknown): value is string {
   return typeof value === 'string' && value.length > 0 && value === value.trim()
 }
@@ -34,6 +39,7 @@ function normalizedText(value: unknown): value is string {
 function normalizedList(value: unknown): value is string[] {
   return Array.isArray(value) && value.every(normalizedText)
 }
+/* jscpd:ignore-end */
 
 /**
  * Defensively decode one evaluator verdict across the provider boundary.

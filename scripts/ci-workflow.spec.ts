@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import * as yaml from 'js-yaml'
 import { describe, expect, it } from 'vitest'
@@ -9,7 +9,13 @@ const nativeWindowsPnpmDestination = '${{ runner.temp }}/setup-pnpm-js'
 
 describe('CI workflow', () => {
   it('isolates every pnpm action setup destination per runner', () => {
-    const files = ['.github/workflows/ci.yml', '.github/workflows/ci-master.yml']
+    const files = [
+      '.github/workflows/ci.yml',
+      '.github/workflows/ci-master.yml',
+      '.github/workflows/ci-nightly.yml',
+      '.github/workflows/ci-snapshot-diagnose.yml',
+      '.github/workflows/ci-pwsh-diagnose.yml',
+    ]
     const setups: Array<{ jobName: string; step: unknown }> = []
     for (const file of files) {
       const workflow: unknown = yaml.load(readFileSync(resolve(root, file), 'utf8'))
@@ -36,26 +42,28 @@ describe('CI workflow', () => {
     }
   })
 
-  it('keeps a required Wine Windows job, a non-blocking native Windows job with failover, and a master-only standby', () => {
+  it('keeps every lane on a standard hosted runner: required Wine, a nightly native Windows lane, and a post-merge lane', () => {
     const workflow = loadWorkflow('.github/workflows/ci.yml')
     const masterWorkflow = loadWorkflow('.github/workflows/ci-master.yml')
+    const nightlyWorkflow = loadWorkflow('.github/workflows/ci-nightly.yml')
     if (!isRecord(workflow.jobs)
       || !isRecord(workflow.jobs.windows)
-      || !isRecord(workflow.jobs['windows-native'])
       || !isRecord(workflow.jobs['node-24'])
       || !isRecord(workflow.jobs['node-24-coverage'])
       || !isRecord(workflow.jobs['node-24-consumers'])
       || !isRecord(workflow.jobs['all-checks-passed'])
       || !isRecord(masterWorkflow.jobs)
       || !isRecord(masterWorkflow.jobs['wine-apt-cache'])
-      || !isRecord(masterWorkflow.jobs['serial-windows'])) {
-      throw new TypeError('CI workflow must define windows, windows-native, node-24, node-24-coverage, node-24-consumers, and all-checks-passed; ci-master must define wine-apt-cache and serial-windows')
+      || !isRecord(masterWorkflow.jobs['post-merge'])
+      || !isRecord(nightlyWorkflow.jobs)
+      || !isRecord(nightlyWorkflow.jobs['windows-native'])) {
+      throw new TypeError('CI workflow must define windows, node-24, node-24-coverage, node-24-consumers, and all-checks-passed; ci-master must define wine-apt-cache and post-merge; ci-nightly must define windows-native')
     }
 
     const windows = workflow.jobs.windows
-    const windowsNative = workflow.jobs['windows-native']
     const wineAptCache = masterWorkflow.jobs['wine-apt-cache']
-    const serialWindows = masterWorkflow.jobs['serial-windows']
+    const postMerge = masterWorkflow.jobs['post-merge']
+    const windowsNative = nightlyWorkflow.jobs['windows-native']
     const node24 = workflow.jobs['node-24']
     const node24Coverage = workflow.jobs['node-24-coverage']
     const node24Consumers = workflow.jobs['node-24-consumers']
@@ -73,17 +81,20 @@ describe('CI workflow', () => {
     expect(windows.if).toBe("github.event_name == 'pull_request'")
     expect(commandSteps.some(step => step.run.includes('wine-windows-gates.sh'))).toBe(true)
 
-    // windows-native: non-blocking native job with failover, runs windows-complete.
-    // Its pool is resolved by the Windows-specific switch.
-    expect(typeof windowsNative['runs-on']).toBe('string')
-    expect(windowsNative['runs-on']).toContain('DSH_CI_FAILOVER_WINDOWS')
-    expect(windowsNative['runs-on']).not.toContain('DSH_CI_FAILOVER_LINUX')
-    expect(windowsNative['runs-on']).toContain('self-hosted')
-    expect(windowsNative['runs-on']).toContain('dsh-win-ci')
-    expect(windowsNative['runs-on']).toContain('dsh-windows-2025-16core')
+    // windows-native: the complete native inventory runs nightly (and on
+    // dispatch) on the standard hosted Windows image, never inside the
+    // pull-request verdict.
+    expect(windowsNative['runs-on']).toBe('windows-latest')
     expect(windowsNative.name).toBe('windows node 24 / native complete')
-    expect(windowsNative.if).toBe("github.event_name == 'pull_request'")
+    expect(nightlyWorkflow.on).toHaveProperty('schedule')
+    expect(nightlyWorkflow.on).toHaveProperty('workflow_dispatch')
+    expect(workflow.jobs).not.toHaveProperty('windows-native')
     expect(windowsNative.env).toMatchObject({
+      DSH_COVERAGE_TEST_TIMEOUT_MS: '30000',
+    })
+    // The pull-request coverage lane runs the heavy exempt specs with few
+    // workers on a standard runner, so it raises the same paired timeout.
+    expect(node24Coverage.env).toMatchObject({
       DSH_COVERAGE_TEST_TIMEOUT_MS: '30000',
     })
     const nativeSteps = windowsNative.steps as unknown[]
@@ -92,111 +103,140 @@ describe('CI workflow', () => {
     ))
     expect(nativeCommandSteps.map(step => step.run)).toContain('pnpm run check:ci:windows-complete')
 
-    // wine-apt-cache: master-only, seeds the Wine apt cache, lives in ci-master.
-    expect(wineAptCache.if).toBe("github.event_name == 'push' && github.ref == 'refs/heads/master'")
+    // wine-apt-cache: default-branch-only, seeds the Wine apt cache, lives in
+    // ci-master.
+    expect(wineAptCache.if).toBe("github.event_name == 'push' && github.ref == 'refs/heads/main'")
     expect(wineAptCache['runs-on']).toBe('ubuntu-latest')
 
-    // serial-windows: master-only standby, self-hosted, non-blocking, lives in ci-master.
-    expect(serialWindows.if).toBe("github.event_name == 'push' && github.ref == 'refs/heads/master'")
-    expect(serialWindows['runs-on']).toEqual(['self-hosted', 'dsh-win-ci', 'windows'])
-    expect(serialWindows.name).toBe('serial / windows (self-hosted standby)')
+    // post-merge: the merged tree still installs, builds, unit-tests, and
+    // passes the static gates on a standard runner, and it seeds the browser
+    // cache the consumer lane reads.
+    if (!Array.isArray(postMerge.steps)) throw new TypeError('post-merge lane must define steps')
+    const postMergeSteps = postMerge.steps.filter(isRecord)
+    const postMergeCommands = postMergeSteps
+      .map(step => step.run)
+      .filter((run): run is string => typeof run === 'string' && run.startsWith('pnpm '))
+    expect(postMergeCommands).toEqual([
+      'pnpm install --frozen-lockfile',
+      'pnpm --filter @vreal/dsh-web-frontend exec playwright install chromium',
+      'pnpm run build',
+      'pnpm run test',
+      'pnpm run check:ci:static',
+    ])
+
+    // The pull-request lanes are restore-only by design, so the default-branch
+    // lane must be the writer of the caches they read.
+    const postMergeUses = postMergeSteps
+      .map(step => step.uses)
+      .filter((uses): uses is string => typeof uses === 'string')
+    expect(postMergeUses.filter(uses => uses.startsWith('actions/cache/restore@'))).toHaveLength(2)
+    expect(postMergeUses.filter(uses => uses.startsWith('actions/cache/save@'))).toHaveLength(2)
 
     // Aggregate: Wine `windows` required, native `windows-native` excluded.
     expect(aggregate.needs).toContain('windows')
     expect(aggregate.needs).not.toContain('windows-native')
-    expect(aggregate.needs).not.toContain('serial-windows')
 
-    // Linux failover is a separate switch: the three required Linux workers
-    // and the verdict job resolve their pool through DSH_CI_FAILOVER_LINUX,
-    // never the Windows switch.
-    for (const [jobName, job] of [['node-24', node24], ['node-24-coverage', node24Coverage], ['node-24-consumers', node24Consumers]] as const) {
-      expect(typeof job['runs-on']).toBe('string')
-      expect(job['runs-on'], `${jobName} runs-on must use the Linux failover switch`).toContain('DSH_CI_FAILOVER_LINUX')
-      expect(job['runs-on'], `${jobName} runs-on must not use the Windows failover switch`).not.toContain('DSH_CI_FAILOVER_WINDOWS')
-      expect(job['runs-on']).toContain('vm-backup')
+    // Every blocking lane and the verdict run on a standard GitHub-hosted
+    // runner.
+    for (const [jobName, job] of [
+      ['node-24', node24],
+      ['node-24-coverage', node24Coverage],
+      ['node-24-consumers', node24Consumers],
+      ['all-checks-passed', aggregate],
+    ] as const) {
+      expect(job['runs-on'], `${jobName} must run on a standard hosted runner`)
+        .toBe('ubuntu-latest')
     }
-    expect(aggregate['runs-on']).toContain('DSH_CI_FAILOVER_LINUX')
-    expect(aggregate['runs-on']).not.toContain('DSH_CI_FAILOVER_WINDOWS')
-    expect(aggregate['runs-on']).toContain('vm-backup')
   })
 
-  it('exempts push from cancellation in ci-master, so one master merge does not cancel the running drill', () => {
+  it('keeps no upstream-only infrastructure: standard runners, no failover switches, manual-only e2e and pack', () => {
     const workflow = loadWorkflow('.github/workflows/ci-master.yml')
     const prWorkflow = loadWorkflow('.github/workflows/ci.yml')
     if (!isRecord(workflow.jobs) || !isRecord(workflow.concurrency)) {
       throw new TypeError('ci-master workflow must define jobs and a workflow-level concurrency block')
     }
-    if (!isRecord(prWorkflow.jobs)) {
-      throw new TypeError('ci workflow must define jobs')
+    if (!isRecord(prWorkflow.jobs) || !isRecord(prWorkflow.concurrency)) {
+      throw new TypeError('ci workflow must define jobs and a workflow-level concurrency block')
     }
 
-    // Cancellation applies to the whole superseded RUN, so this has to be
-    // decided at workflow level and gated on the event: a job-level group
-    // cannot exempt its job from its run being cancelled. Only push is exempt —
-    // a drill takes longer than the interval between master merges. The negated
-    // form is load-bearing: `== 'pull_request'` would also stop cancelling
-    // workflow_dispatch, and a re-dispatched runner benchmark holds up to 12
-    // larger runners for 15 minutes in this same group on master.
-    expect(workflow.concurrency['cancel-in-progress']).toBe("${{ github.event_name != 'push' }}")
+    // No lane may read an upstream failover variable, and every explicit runner
+    // label is a standard GitHub-hosted image rather than a self-hosted pool or
+    // an organization-scoped label this repository cannot allocate.
+    const nightly = loadWorkflow('.github/workflows/ci-nightly.yml')
+    const pwshDiagnostic = loadWorkflow('.github/workflows/ci-pwsh-diagnose.yml')
+    for (const [file, loaded] of [
+      ['ci.yml', prWorkflow],
+      ['ci-master.yml', workflow],
+      ['ci-nightly.yml', nightly],
+      ['ci-pwsh-diagnose.yml', pwshDiagnostic],
+    ] as const) {
+      const raw = readFileSync(resolve(root, `.github/workflows/${file}`), 'utf8')
+      expect(raw, `${file} must not reference an upstream failover variable`).not.toContain('DSH_CI_FAILOVER')
+      if (!isRecord(loaded.jobs)) throw new TypeError(`${file} must define jobs`)
+      for (const [jobName, job] of Object.entries(loaded.jobs)) {
+        if (!isRecord(job)) continue
+        const runsOn = job['runs-on']
+        if (runsOn === undefined || (typeof runsOn === 'string' && runsOn.startsWith('${{'))) continue
+        const labels = Array.isArray(runsOn) ? runsOn : [runsOn]
+        expect(labels, `${file} job ${jobName}`).not.toContain('self-hosted')
+        for (const label of labels) {
+          expect(
+            ['ubuntu-latest', 'windows-latest', 'ubuntu-24.04', 'macos-latest'],
+            `${file} job ${jobName} runner ${String(label)}`,
+          ).toContain(label)
+        }
+      }
+    }
 
-    // The PR-only ci.yml still cancels a superseded run on a new push, so a
-    // fresh head does not stack a second full 9-job run behind a stale one.
-    // Unlike ci-master it has no push carve-out: every PR event supersedes.
-    expect(prWorkflow.concurrency).toMatchObject({
-      'cancel-in-progress': true,
-    })
+    // A superseded run never delays a newer one: both workflows cancel it.
+    expect(workflow.concurrency).toMatchObject({ 'cancel-in-progress': true })
+    expect(prWorkflow.concurrency).toMatchObject({ 'cancel-in-progress': true })
 
-    // The exact event sets are what keep master-only jobs out of the PR check
-    // panel: ci-master triggers only on push(master) + workflow_dispatch and
-    // never on pull_request; ci.yml is exactly pull_request-only. Assert the
-    // full sets so losing the wrong event, or gaining an extra one, fails.
+    // The exact event sets are what keep post-merge jobs out of the PR check
+    // panel: ci-master triggers only on push(main) + workflow_dispatch and never
+    // on pull_request; ci.yml is exactly pull_request-only. Assert the full sets
+    // so losing the wrong event, or gaining an extra one, fails.
     if (!isRecord(workflow.on) || !isRecord(prWorkflow.on)) {
       throw new TypeError('both CI workflows must define on')
     }
     expect(Object.keys(workflow.on).sort()).toEqual(['push', 'workflow_dispatch'])
+    expect(workflow.on.push).toMatchObject({ branches: ['main'] })
     expect(Object.keys(prWorkflow.on)).toEqual(['pull_request'])
 
-    // Neither drill may carry a job-level group: it would not exempt the job
-    // from run-scoped cancellation.
-    for (const name of ['serial-linux-selfhosted', 'serial-windows']) {
-      const job = workflow.jobs[name]
-      if (!isRecord(job)) throw new TypeError(`${name} must be defined`)
-      expect(job.concurrency).toBeUndefined()
-      // Both stay master-push-only; that is what makes the push carve-out safe.
-      expect(job.if).toBe("github.event_name == 'push' && github.ref == 'refs/heads/master'")
+    // Upstream's self-hosted drills and larger-runner benchmarks are gone: the
+    // post-merge workflow carries the cache seeder and the validation lane.
+    expect(Object.keys(workflow.jobs).sort()).toEqual(['post-merge', 'wine-apt-cache'])
+
+    // The credential- and toolchain-dependent lanes are manual-only here: the
+    // e2e suites need a DEEPSEEK_API_KEY this repository does not hold, and the
+    // pack job needs the publishing toolchain it does not wire up.
+    for (const file of ['e2e.yml', 'release.yml']) {
+      const manual = loadWorkflow(`.github/workflows/${file}`)
+      if (!isRecord(manual.on)) throw new TypeError(`${file} must define on`)
+      expect(Object.keys(manual.on)).toEqual(['workflow_dispatch'])
     }
 
-    // What bounds the cost of exempting push: a master push may only carry the
-    // cache seeder and the two drills. Any job reachable on push would start
-    // accumulating uncancelled runs, so the set is pinned here.
-    const NOT_PUSH_REACHABLE = new Set([
-      "github.event_name == 'workflow_dispatch' && inputs.suite == 'larger-runner-benchmark'",
-      "github.event_name == 'workflow_dispatch' && inputs.suite == 'consolidated-runner-benchmark'",
-    ])
-    const pushReachable = Object.entries(workflow.jobs)
-      .filter(([, job]) => {
-        if (!isRecord(job)) return false
-        if (job.if === undefined) return true // unconditional: runs on every event
-        if (job.if === false) return false // `if: false` parses as a boolean
-        if (typeof job.if !== 'string') return true // unrecognized shape: surface it
-        return !NOT_PUSH_REACHABLE.has(job.if.trim())
-      })
-      .map(([name]) => name)
-      .sort()
-    expect(pushReachable).toEqual(['serial-linux-selfhosted', 'serial-windows', 'wine-apt-cache'])
+    // The snapshot diagnostic is dispatch-only once it lands on the default
+    // branch; its branch-local push trigger is filtered to this one file.
+    const diagnose = loadWorkflow('.github/workflows/ci-snapshot-diagnose.yml')
+    if (!isRecord(diagnose.on)) throw new TypeError('ci-snapshot-diagnose.yml must define on')
+    expect(Object.keys(diagnose.on).sort()).toEqual(['push', 'workflow_dispatch'])
+    expect(diagnose.on.push).toMatchObject({ paths: ['.github/workflows/ci-snapshot-diagnose.yml'] })
 
-    // Why workflow_dispatch must keep cancelling: each benchmark fans out to a
-    // dozen larger runners at once, in this same group on master. If it stopped
-    // cancelling, a re-dispatch would queue ahead of a drill instead of
-    // replacing the stale measurement.
-    for (const name of ['larger-runner-benchmark', 'consolidated-runner-benchmark']) {
-      const job = workflow.jobs[name]
-      if (!isRecord(job) || !isRecord(job.strategy)) {
-        throw new TypeError(`${name} must define a matrix strategy`)
-      }
-      expect(job.strategy['max-parallel']).toBe(12)
-      expect(job['timeout-minutes']).toBe(15)
-    }
+    // The pwsh diagnostic follows that shape and stays out of the verdict: it
+    // replays the persistent-pwsh suites and uploads the raw PTY bytes, which
+    // is the Linux-side evidence the coverage lane truncates.
+    const pwshDiagnose = loadWorkflow('.github/workflows/ci-pwsh-diagnose.yml')
+    if (!isRecord(pwshDiagnose.on)) throw new TypeError('ci-pwsh-diagnose.yml must define on')
+    expect(Object.keys(pwshDiagnose.on).sort()).toEqual(['push', 'workflow_dispatch'])
+    expect(pwshDiagnose.on.push).toMatchObject({ paths: ['.github/workflows/ci-pwsh-diagnose.yml'] })
+    expect(workflowJob(pwshDiagnose, 'pwsh-pty-replay')['runs-on']).toBe('ubuntu-latest')
+    expect(prWorkflow.jobs).not.toHaveProperty('pwsh-pty-replay')
+
+    // The vendor pack lane keeps its pull-request signal: it runs on a standard
+    // runner and passes.
+    const vendor = loadWorkflow('.github/workflows/release-vendor.yml')
+    expect(vendor.on).toHaveProperty('pull_request')
   })
 
   it('keeps supported LSP source under native Windows coverage', () => {
@@ -423,38 +463,17 @@ describe('Python release workflows', () => {
   })
 })
 
-describe('Issue lifecycle workflow', () => {
-  it('runs the lifecycle job on every PR/review event but gates token and board steps', () => {
-    const lifecycle = loadWorkflow('.github/workflows/issue-lifecycle.yml')
-    const policy = loadWorkflow('.github/workflows/issue-policy.yml')
-    const lifecycleJob = workflowJob(lifecycle, 'lifecycle')
-    if (!Array.isArray(lifecycleJob.steps)) throw new TypeError('Issue lifecycle job must define steps')
-
-    // The job has no job-level `if`, so it is listed on every pull_request /
-    // pull_request_review event and reports success instead of a gray skip. The
-    // write-capable steps are gated at step level so approved/commented reviews
-    // never mint a Project/Issue App token nor touch the board.
-    expect(lifecycle.on).toHaveProperty('pull_request')
-    expect(lifecycle.on).toHaveProperty('pull_request_review')
-    expect(lifecycleJob.if).toBeUndefined()
-    // Keep the subscription-type gates: issue-lifecycle does not re-subscribe
-    // ready_for_review (issue-policy owns that) and only reacts to submitted
-    // review events.
-    const lifecyclePullRequest = workflowEvent(lifecycle, 'pull_request')
-    const lifecycleReview = workflowEvent(lifecycle, 'pull_request_review')
-    expect(lifecyclePullRequest.types).not.toContain('ready_for_review')
-    expect(lifecyclePullRequest.types).toContain('review_requested')
-    expect(lifecycleReview.types).toEqual(['submitted'])
-    const gated = "${{ github.event_name != 'pull_request_review' || github.event.review.state == 'changes_requested' }}"
-    const steps = lifecycleJob.steps.filter(isRecord)
-    const tokenStep = steps.find(s => s.name === 'Create project token')
-    const handleStep = steps.find(s => s.name === 'Handle repository event')
-    expect(tokenStep).toMatchObject({ if: gated })
-    expect(handleStep).toMatchObject({ if: gated })
-
-    // issue-policy owns PR validation; it is read-only and a real gate.
-    const policyPullRequest = workflowEvent(policy, 'pull_request')
-    expect(policyPullRequest.types).toContain('ready_for_review')
+describe('Downstream issue policy', () => {
+  it('ships the label policy library without the org-Project workflows', () => {
+    // The two workflows enforced the upstream organization's Project board
+    // through an App token; this repository has neither, so they can never pass
+    // and must not appear in a pull request's checks. The pure policy library
+    // and its focused tests stay: the static gate runs them, and a fork-local
+    // board could rebuild a thin workflow over them later.
+    expect(existsSync(resolve(root, '.github/workflows/issue-policy.yml'))).toBe(false)
+    expect(existsSync(resolve(root, '.github/workflows/issue-lifecycle.yml'))).toBe(false)
+    expect(existsSync(resolve(root, '.github/issue-management/policy.mjs'))).toBe(true)
+    expect(existsSync(resolve(root, '.github/issue-management/policy.test.mjs'))).toBe(true)
   })
 })
 

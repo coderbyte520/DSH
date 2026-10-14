@@ -7,17 +7,17 @@
 # workflow_dispatch of release-publish.yml from a dsh-v* tag.
 name: Release (dsh)
 
+# Manual-only in this downstream repository: the pack job verifies a packed
+# install, which needs the published-artifact toolchain this repository does not
+# wire up yet. Run it from the Actions tab when preparing a release.
 on:
-  pull_request:
-  push:
-    branches: [master]
   workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  # Pack runs per ref so concurrent pull requests never displace each other.
+  # Pack runs per ref so concurrent manual runs never displace each other.
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: false
 

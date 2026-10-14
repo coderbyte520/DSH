@@ -169,6 +169,22 @@ describe('SubagentHeaderLineage', () => {
     expect(input.setCatalogOpen).toHaveBeenLastCalledWith(PARENT, false)
   })
 
+  it('repositions the portaled menu when the viewport or scroll position moves', () => {
+    render(<SubagentHeaderLineage {...props(catalog())} />)
+    const trigger = screen.getByRole('button', { name: /2 个子代理/ })
+    hoverCatalog(trigger)
+    const menu = screen.getByRole('tree')
+    expect(menu.style.top).toBe('5px')
+
+    trigger.getBoundingClientRect = () => ({ bottom: 300, left: 0 } as DOMRect)
+    act(() => { window.dispatchEvent(new Event('resize')) })
+    expect(menu.style.top).toBe('305px')
+
+    trigger.getBoundingClientRect = () => ({ bottom: 120, left: 0 } as DOMRect)
+    act(() => { document.dispatchEvent(new Event('scroll')) })
+    expect(menu.style.top).toBe('125px')
+  })
+
   it('selects singular count keys for one descendant', () => {
     const base = props(catalog({
       entries: [{

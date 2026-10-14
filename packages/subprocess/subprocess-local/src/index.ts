@@ -173,7 +173,7 @@ export class LocalSubprocessRuntime extends SubprocessRuntime {
     }
     const inspector = this.terminalInspector ?? createProcessInspector()
     const terminal = nodePty.spawn(file, [...spec.argv.slice(1)], options)
-    const handle = new LocalTerminalHandle(terminal, inspector, spec.graceMs)
+    const handle = new LocalTerminalHandle(terminal, inspector, spec.graceMs, { rows: spec.rows, cols: spec.cols })
     this.terminals.add(handle)
     const release = async (): Promise<void> => {
       await handle.terminate()

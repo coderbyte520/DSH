@@ -910,7 +910,7 @@ describe('HarnessSdkJsonRpcServer', () => {
     const ctx = {
       on: vi.fn(() => () => undefined),
       agents: { create, get: () => undefined },
-      get: () => ({ listProviders: () => [{ id: 'mock', name: 'Mock' }] }),
+      get: (key: string) => key === 'llm' ? { listProviders: () => [{ id: 'mock', name: 'Mock' }] } : undefined,
     } as unknown as Context
     const server = new HarnessSdkJsonRpcServer(ctx, new FakeTransport()) as unknown as {
       initialize(params: { cwd: string; provider: string; model: string; maxTokens?: number }): Promise<unknown>
@@ -925,6 +925,94 @@ describe('HarnessSdkJsonRpcServer', () => {
       meta: { cwd: process.cwd() },
       agentOptions: { provider: 'mock', model: 'model', maxTokens: 123 },
     }))
+    await server.shutdown()
+  })
+
+  it('resumes a persisted session instead of creating a fresh one', async () => {
+    const resumed = { agent: {} as Agent, dispose: vi.fn(() => Promise.resolve()) }
+    const resume = vi.fn(() => Promise.resolve(resumed))
+    const create = vi.fn()
+    const list = vi.fn(() => Promise.resolve([{ id: 'persisted' }]))
+    const ctx = {
+      on: vi.fn(() => () => undefined),
+      agents: { create, resume, get: () => undefined },
+      get: (key: string) => key === 'llm'
+        ? { listProviders: () => [{ id: 'mock', name: 'Mock' }] }
+        : key === 'sessionPersistence' ? { list } : undefined,
+    } as unknown as Context
+    const server = new HarnessSdkJsonRpcServer(ctx, new FakeTransport()) as unknown as {
+      initialize(params: { cwd: string; provider: string; model: string }): Promise<unknown>
+      getOrCreateSession(sessionId: string): Promise<{ handle: AgentHandle }>
+      shutdown(): Promise<Record<string, never>>
+    }
+
+    await server.initialize({ cwd: '.', provider: 'mock', model: 'model' })
+    const record = await server.getOrCreateSession('persisted')
+
+    expect(record.handle).toBe(resumed)
+    expect(resume).toHaveBeenCalledWith({
+      resumeSessionId: SessionId('persisted'),
+      agentOptions: { provider: 'mock', model: 'model' },
+    })
+    expect(create).not.toHaveBeenCalled()
+    expect(list).toHaveBeenCalledTimes(1)
+    await server.shutdown()
+  })
+
+  it('creates a fresh session when the persisted artifact disappears during the resume attempt', async () => {
+    const fresh = { agent: {} as Agent, dispose: vi.fn(() => Promise.resolve()) }
+    const list = vi.fn()
+      .mockResolvedValueOnce([{ id: 'vanished' }])
+      .mockResolvedValueOnce([])
+    const create = vi.fn(() => Promise.resolve(fresh))
+    const resume = vi.fn(() => Promise.reject(new Error('unreadable artifact')))
+    const ctx = {
+      on: vi.fn(() => () => undefined),
+      agents: { create, resume, get: () => undefined },
+      get: (key: string) => key === 'llm'
+        ? { listProviders: () => [{ id: 'mock', name: 'Mock' }] }
+        : key === 'sessionPersistence' ? { list } : undefined,
+    } as unknown as Context
+    const server = new HarnessSdkJsonRpcServer(ctx, new FakeTransport()) as unknown as {
+      initialize(params: { cwd: string; provider: string; model: string }): Promise<unknown>
+      getOrCreateSession(sessionId: string): Promise<{ handle: AgentHandle }>
+      shutdown(): Promise<Record<string, never>>
+    }
+
+    await server.initialize({ cwd: '.', provider: 'mock', model: 'model' })
+    const record = await server.getOrCreateSession('vanished')
+
+    expect(record.handle).toBe(fresh)
+    expect(create).toHaveBeenCalledWith(expect.objectContaining({
+      sessionId: SessionId('vanished'),
+      meta: { cwd: process.cwd() },
+    }))
+    expect(list).toHaveBeenCalledTimes(2)
+    await server.shutdown()
+  })
+
+  it('stays loud when a resume failure leaves the persisted artifact in place', async () => {
+    const list = vi.fn(() => Promise.resolve([{ id: 'broken' }]))
+    const create = vi.fn()
+    const resume = vi.fn(() => Promise.reject(new Error('unreadable artifact')))
+    const ctx = {
+      on: vi.fn(() => () => undefined),
+      agents: { create, resume, get: () => undefined },
+      get: (key: string) => key === 'llm'
+        ? { listProviders: () => [{ id: 'mock', name: 'Mock' }] }
+        : key === 'sessionPersistence' ? { list } : undefined,
+    } as unknown as Context
+    const server = new HarnessSdkJsonRpcServer(ctx, new FakeTransport()) as unknown as {
+      initialize(params: { cwd: string; provider: string; model: string }): Promise<unknown>
+      getOrCreateSession(sessionId: string): Promise<{ handle: AgentHandle }>
+      shutdown(): Promise<Record<string, never>>
+    }
+
+    await server.initialize({ cwd: '.', provider: 'mock', model: 'model' })
+
+    await expect(server.getOrCreateSession('broken')).rejects.toThrow('unreadable artifact')
+    expect(create).not.toHaveBeenCalled()
+    expect(list).toHaveBeenCalledTimes(2)
     await server.shutdown()
   })
 

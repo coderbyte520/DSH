@@ -121,8 +121,11 @@ async function startupSession(
     // UTF-8, and an un-pinned console writes its host code page for
     // non-ASCII output. The banner-to-prompt gap can outlast the silence
     // bound, so the wait loops over follow-up sends until the controlled
-    // prompt is actually visible (in the viewport or the retained scrollback
-    // when it landed between sends), bounded by the send deadline.
+    // prompt is actually rendered. Only the END of the retained text counts:
+    // a line editor echoes the bootstrap's own source, which names the prompt
+    // string, so matching anywhere in the text would publish a shell that has
+    // not reached its prompt yet. The scrollback covers a prompt that landed
+    // between sends, and the send deadline bounds the wait.
     let viewport = ''
     for (;;) {
       const first = viewport.length === 0
@@ -135,8 +138,10 @@ async function startupSession(
       if (result.waitReason === 'session_exit') throw new Error('PTY shell exited during startup')
       if (result.waitReason === 'timeout') throw new Error('PTY shell did not reach readiness before startup timeout')
       viewport = result.viewport
-      const scrollback = session.read({ offset: 0, count: 20 }).text
-      if (viewport.includes(CONTROLLED_PROMPT) || scrollback.includes(CONTROLLED_PROMPT)) break
+      // The sanitizer renders this tail only after an owned marker, so it is a
+      // rendered prompt rather than text that merely names one — the line
+      // editor echoes the bootstrap source, which contains the prompt string.
+      if (session.renderedPromptTail === CONTROLLED_PROMPT) break
     }
     session.motd = viewport
   }

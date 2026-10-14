@@ -61,6 +61,16 @@ class BoundedTextBuffer {
     this.dropped ||= tail.truncated
   }
 
+  /**
+   * Drop characters the child just redrew. The sanitizer bounds the count to
+   * the current line, so a retraction never crosses into an earlier line.
+   * @param count - characters to remove from the retained tail.
+   */
+  truncate(count: number): void {
+    if (count <= 0) return
+    this.value = this.value.length > count ? this.value.slice(0, -count) : ''
+  }
+
   consume(): TerminalSendRead {
     const delta = this.value
     const truncated = this.dropped
@@ -106,6 +116,14 @@ class LocalSendOperation implements TerminalSendOperation {
 
   append(text: string): void {
     if (!this.finished) this.output.append(text)
+  }
+
+  /**
+   * Apply the sanitizer's retraction for a redrawn line.
+   * @param count - characters the child replaced at the end of this send's output.
+   */
+  retract(count: number): void {
+    if (!this.finished) this.output.truncate(count)
   }
 
   settle(waitReason: TerminalWaitReason, sessionStatus: TerminalSessionStatus, inheritedTruncation: boolean): void {
@@ -156,6 +174,17 @@ class LocalSendOperation implements TerminalSendOperation {
 export class LocalPtySession implements TerminalBackendSession {
   motd = ''
   readonly pid: number
+
+  /**
+   * The rendered tail after the latest owned prompt marker, or `undefined`
+   * before any marker. Startup uses it to tell a rendered prompt from text that
+   * only names the prompt string, such as the echoed bootstrap source.
+   * @returns the rendered tail, when one has been observed.
+   */
+  get renderedPromptTail(): string | undefined {
+    return this.renderedTail
+  }
+
   private readonly decoder = new TextDecoder()
   private readonly sanitizer: TerminalSanitizer
   private readonly scrollback: BoundedTextBuffer
@@ -177,6 +206,8 @@ export class LocalPtySession implements TerminalBackendSession {
   private polling = false
   private promptSeen = false
   private promptTextSeen = false
+  /** Rendered tail after the latest owned marker; survives send boundaries. */
+  private renderedTail: string | undefined
   private promptTail = ''
   private shellPgid: number | undefined
   private initializing = false
@@ -379,7 +410,11 @@ export class LocalPtySession implements TerminalBackendSession {
 
   private onData(data: string): void {
     const sanitized = this.sanitizer.push(data)
-    this.appendOutput(sanitized.text)
+    this.appendOutput(sanitized.text, sanitized.retract ?? 0)
+    // The sanitizer tracks this only after an owned marker, so it is evidence of
+    // a rendered prompt rather than of text that merely names one. It survives
+    // send boundaries because the sanitizer's line model does.
+    if (sanitized.promptTail !== undefined) this.renderedTail = sanitized.promptTail
     if (sanitized.prompt) {
       // TODO(pty-delayed-signal-prompt): With a reproducer, define a marker-generation boundary
       // before attributing a signal-delayed prompt to a later send.
@@ -391,9 +426,10 @@ export class LocalPtySession implements TerminalBackendSession {
       this.lastOutputAt = Date.now()
     }
     if (this.promptSeen && sanitized.promptTail !== undefined) {
-      const remaining = Math.max(0, CONTROLLED_PROMPT.length + 1 - this.promptTail.length)
-      this.promptTail += sanitized.promptTail.slice(0, remaining)
-      if (sanitized.promptTail.length > remaining) this.promptTail = `${CONTROLLED_PROMPT}\0`
+      // The sanitizer renders the line, so its reported tail is authoritative:
+      // a repaint that rewrites the prompt reports the prompt again instead of
+      // accumulating a second copy.
+      this.promptTail = sanitized.promptTail
       this.promptTextSeen = this.promptTail === CONTROLLED_PROMPT
     }
   }
@@ -413,9 +449,11 @@ export class LocalPtySession implements TerminalBackendSession {
     void this.terminal.terminate().catch(() => {})
   }
 
-  private appendOutput(text: string): void {
+  private appendOutput(text: string, retract = 0): void {
+    if (text.length > 0 || retract > 0) this.lastOutputAt = Date.now()
+    this.scrollback.truncate(retract)
+    this.active?.retract(retract)
     if (text.length === 0) return
-    this.lastOutputAt = Date.now()
     this.scrollback.append(text)
     this.active?.append(text)
   }

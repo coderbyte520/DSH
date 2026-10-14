@@ -2,5 +2,5 @@
 # side as of the last confirmed-consistent state. Both languages carry equal authority;
 # after editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/simplification/2026-08-09-conversational-schedule-delivery.md
-2026-08-09-conversational-schedule-delivery.md: 8795d9da1d08bf6e74ecd6b374db69e3c143ad7d
-2026-08-09-conversational-schedule-delivery.zh.md: c9688f80cb67a936aa331f09a2a03200c3be2af8
+2026-08-09-conversational-schedule-delivery.md: 3e21ab701bd274c65d30065c7dbe8dc5b00d98ae
+2026-08-09-conversational-schedule-delivery.zh.md: 0a288d9683afc934e3879e26263a69062553951d

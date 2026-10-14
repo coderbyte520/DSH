@@ -1,0 +1,366 @@
+name: pwsh PTY diagnose
+
+# Manual diagnostic: replay the persistent-pwsh suites on a Linux runner and
+# capture the raw bytes of a real pwsh session over a pseudo-terminal. The
+# coverage lane reports these suites as truncated assertion bodies, and the
+# divergence under investigation is the PowerShell-over-PTY stream protocol on
+# Linux, which a Windows checkout cannot reproduce.
+
+# `workflow_dispatch` only reaches workflows that exist on the default branch,
+# so until this file lands there the push trigger is how a feature branch runs
+# it: touch this file to request a diagnostic. The paths filter keeps an
+# ordinary push from starting the lane.
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - .github/workflows/ci-pwsh-diagnose.yml
+
+permissions:
+  contents: read
+
+env:
+  # CI runs must never report to the production telemetry endpoint baked into
+  # apps/cli/cordis.yml (AppCLIEntry disables the row when set).
+  DSH_TELEMETRY_DISABLED: '1'
+
+jobs:
+  pwsh-pty-replay:
+    name: pwsh PTY replay
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - uses: pnpm/action-setup@v4
+        with:
+          dest: ${{ runner.temp }}/setup-pnpm
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+
+      - name: Report the PowerShell under test
+        run: |
+          which pwsh
+          pwsh --version
+          pwsh -NoLogo -NoProfile -Command '$PSVersionTable | Out-String; (Get-Module -ListAvailable PSReadLine | Select-Object -First 1).Version.ToString()'
+          locale
+
+      - name: Install (immutable)
+        run: pnpm install --frozen-lockfile
+
+      # These suites import workspace sources, so they do not need the lane's
+      # build; the failure under investigation is in the PTY stream protocol.
+      - name: Replay the persistent-pwsh suites
+        continue-on-error: true
+        shell: bash
+        run: >-
+          set -o pipefail &&
+          pnpm exec vitest run
+          packages/shell/tool-pwsh-persistent
+          packages/terminal/terminal-bash
+          --reporter=verbose
+          --maxWorkers=2
+          2>&1 | tee pwsh-suites.log
+
+      # The provider's own transport: node-pty, the resolved window size, and
+      # the provider's env. A bare pseudo-terminal blocks pwsh on its cursor
+      # query, so the question this step answers is whether that reaches the
+      # transport the harness actually spawns, and whether answering the query
+      # at that layer is enough to run the prompt protocol.
+      - name: Probe pwsh through node-pty (the provider transport)
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -o pipefail
+          pnpm --filter @vreal/dsh-subprocess-local exec node --input-type=module - <<'JS' 2>&1 | tee pwsh-node-pty-probe.txt
+          import * as nodePty from 'node-pty'
+
+          const wait = milliseconds => new Promise(resolve => setTimeout(resolve, milliseconds))
+
+          /** Drop control sequences and normalize newlines the way the sanitizer does. */
+          const stripEscapes = (text) => text
+            .replace(/\x1b\][^\x07\x1b]*(?:\x07|\x1b\\)/g, '')
+            .replace(/\x1b\[[0-9;?]*[ -/]*[@-~]/g, '')
+            .replace(/\x1b[@-Z\\-_]/g, '')
+            .replace(/\r\n?/g, '\n')
+            .replace(/\x07/g, '')
+
+          /** Row/column of a line-oriented child: printable runs, CR, LF, backspace. */
+          const createCursor = (cols) => {
+            let row = 1
+            let col = 1
+            return {
+              report: () => `\x1b[${row};${col}R`,
+              feed(text) {
+                for (let index = 0; index < text.length; index += 1) {
+                  const char = text[index]
+                  if (char === '\x1b') {
+                    const kind = text[index + 1]
+                    if (kind === ']') {
+                      while (index < text.length && text[index] !== '\x07') index += 1
+                    } else if (kind === '[') {
+                      index += 2
+                      while (index < text.length && !(text[index] >= '@' && text[index] <= '~')) index += 1
+                    } else {
+                      index += 1
+                    }
+                    continue
+                  }
+                  if (char === '\n') { row += 1; col = 1 }
+                  else if (char === '\r') col = 1
+                  else if (char === '\b') col = Math.max(1, col - 1)
+                  else if (char >= ' ') {
+                    col += 1
+                    if (col > cols) { col = 1; row += 1 }
+                  }
+                }
+              },
+            }
+          }
+          // The terminal-bash pwsh bootstrap, byte for byte: the encoding
+          // preamble plus the prompt function that emits OSC 133;D.
+          const BOOTSTRAP = '[Console]::OutputEncoding = [System.Text.UTF8Encoding]::new($false); '
+            + '$OutputEncoding = [System.Text.UTF8Encoding]::new($false); '
+            + "function prompt { [Console]::Write([char]27 + ']133;D;' + [int]$LASTEXITCODE + [char]7); 'dsh> ' }"
+
+          async function run(label, args, replyMode) {
+            const term = nodePty.spawn('pwsh', args, {
+              name: 'xterm-256color',
+              cols: 160,
+              rows: 40,
+              cwd: process.cwd(),
+              env: { ...process.env, TERM: 'dumb', NO_COLOR: '1' },
+            })
+            let out = ''
+            const cursor = createCursor(160)
+            term.onData((data) => {
+              out += data
+              cursor.feed(data)
+              if (replyMode !== 'none' && data.includes('\x1b[6n')) {
+                term.write(replyMode === 'tracked' ? cursor.report() : '\x1b[1;1R')
+              }
+            })
+
+            await wait(2000)
+            console.log(`=== ${label} ===`)
+            console.log('paste mode enabled by child:', out.includes('\x1b[?2004h'))
+            term.write(`${BOOTSTRAP}\r`)
+            await wait(3000)
+            const afterBootstrap = out
+            term.write('Write-Output "keep=ok"\r')
+            await wait(3000)
+            console.log('total bytes:', out.length)
+            console.log('cursor queries:', (out.match(/\x1b\[6n/g) ?? []).length)
+            console.log('prompt markers:', (out.match(/\x1b\]133;D;/g) ?? []).length)
+            console.log('markers after bootstrap:', (afterBootstrap.match(/\x1b\]133;D;/g) ?? []).length)
+            console.log('bootstrap echo repeats:', (out.match(/function prompt/g) ?? []).length)
+            console.log('keep=ok echoes:', (out.match(/keep=ok/g) ?? []).length)
+            console.log('keep=ok on its own line:', /[\r\n]keep=ok[\r\n]/.test(out))
+            const cursorMoves = [...out.matchAll(/\x1b\[(\d+);(\d+)H/g)].map(match => `${match[1]};${match[2]}`)
+            console.log('cursor moves:', [...new Set(cursorMoves)].join(' ') || '(none)')
+            console.log('cursor move count:', cursorMoves.length)
+            // What a consumer sees after the last owned prompt marker: the text
+            // readiness compares against the controlled prompt.
+            const lastMarker = out.lastIndexOf('\x1b]133;D;')
+            const afterMarker = lastMarker < 0 ? '' : out.slice(lastMarker)
+            console.log('tail after last marker:', JSON.stringify(afterMarker.slice(0, 120)))
+            console.log('printable tail after last marker:', JSON.stringify(stripEscapes(afterMarker).slice(0, 40)))
+            console.log('tail:', JSON.stringify(out.slice(-800)))
+            term.kill()
+          }
+
+          await run('no cursor replies', ['-NoLogo', '-NoProfile'], 'none')
+          await run('home replies', ['-NoLogo', '-NoProfile'], 'home')
+          await run('tracked replies', ['-NoLogo', '-NoProfile'], 'tracked')
+
+          // The backend's own sequence, timed: bootstrap, wait for the rendered
+          // prompt, then one command, with the arrival time of every chunk after
+          // the command write.
+          const term = nodePty.spawn('pwsh', ['-NoLogo', '-NoProfile'], {
+            name: 'xterm-256color',
+            cols: 160,
+            rows: 40,
+            cwd: process.cwd(),
+            env: { ...process.env, TERM: 'dumb', NO_COLOR: '1' },
+          })
+          let seen = ''
+          let markerAt = 0
+          let commandAt = 0
+          const arrivals = []
+          const queries = []
+          const cursor = createCursor(160)
+          term.onData((data) => {
+            seen += data
+            cursor.feed(data)
+            if (data.includes('\x1b[6n')) {
+              if (commandAt > 0) queries.push(`${String(Date.now() - commandAt)}ms`)
+              term.write(cursor.report())
+            }
+            const now = Date.now()
+            if (commandAt > 0) arrivals.push(`${String(now - commandAt)}ms:${String(data.length)}`)
+            if (markerAt === 0 && seen.includes('\x1b]133;D;')) markerAt = now
+          })
+          const bootstrapAt = Date.now()
+          term.write(`${BOOTSTRAP}\r`)
+          while (markerAt === 0 && Date.now() - bootstrapAt < 10_000) await wait(25)
+          console.log('=== backend sequence ===')
+          console.log('bootstrap to first marker (ms):', markerAt - bootstrapAt)
+          await wait(100)
+          const settled = seen
+          commandAt = Date.now()
+          term.write('$env:KEEP = "ok"; Set-Location /\r')
+          await wait(2000)
+          console.log('marker after command:', seen.slice(settled.length).includes('\x1b]133;D;'))
+          console.log('arrivals after command:', arrivals.join(' ') || '(none)')
+          console.log('cursor queries after command:', queries.join(' ') || '(none)')
+          console.log('bytes after command:', seen.length - settled.length)
+          term.kill()
+          JS
+
+      # The same submissions against a bare pseudo-terminal, once per
+      # environment combination that can plausibly change the terminal
+      # protocol, to isolate the cursor reply, the window size, and TERM.
+      - name: Capture the raw pwsh-over-PTY transcript
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          python3 - <<'PY' 2>&1 | tee pwsh-pty-transcript.txt
+          import fcntl, os, pty, select, struct, termios, time
+
+          # The provider's pwsh prompt function: OSC 133;D;<status> then BEL,
+          # followed by the controlled prompt text.
+          PROMPT_SETUP = (
+              "function prompt { [Console]::Write([char]27 + ']133;D;' + [int]$LASTEXITCODE + [char]7); 'dsh> ' }\r"
+          )
+          MARKER = b'\x1b]133;D;'
+
+          class Cursor:
+              """Row/column of a line-oriented child: printable runs, CR, LF, backspace."""
+
+              def __init__(self, rows, cols):
+                  self.rows = rows
+                  self.cols = cols
+                  self.row = 1
+                  self.col = 1
+
+              def feed(self, text):
+                  index = 0
+                  while index < len(text):
+                      char = text[index]
+                      if char == '\x1b':
+                          index = self.skip_escape(text, index)
+                          continue
+                      if char == '\n':
+                          self.row += 1
+                          self.col = 1
+                      elif char == '\r':
+                          self.col = 1
+                      elif char == '\b':
+                          self.col = max(1, self.col - 1)
+                      elif char >= ' ':
+                          self.col += 1
+                          if self.col > self.cols:
+                              self.col = 1
+                              self.row += 1
+                      index += 1
+
+              def skip_escape(self, text, index):
+                  if index + 1 >= len(text):
+                      return index + 1
+                  kind = text[index + 1]
+                  if kind == ']':
+                      end = index + 2
+                      while end < len(text) and text[end] != '\x07':
+                          end += 1
+                      return end + 1
+                  if kind == '[':
+                      end = index + 2
+                      while end < len(text) and not ('@' <= text[end] <= '~'):
+                          end += 1
+                      return end + 1
+                  return index + 2
+
+          def run_session(env_overrides, mode, window=None, settle_seconds=4.0):
+              env = os.environ.copy()
+              env.update(env_overrides)
+              pid, fd = pty.fork()
+              if pid == 0:
+                  os.execvpe('pwsh', ['pwsh', '-NoLogo', '-NoProfile'], env)
+              if window is not None:
+                  rows, cols = window
+                  fcntl.ioctl(fd, termios.TIOCSWINSZ, struct.pack('HHHH', rows, cols, 0, 0))
+              cursor = Cursor(*(window if window is not None else (24, 80)))
+              transcript = bytearray()
+
+              def drain(seconds):
+                  deadline = time.time() + seconds
+                  while time.time() < deadline:
+                      ready, _, _ = select.select([fd], [], [], 0.25)
+                      if not ready:
+                          continue
+                      try:
+                          data = os.read(fd, 65536)
+                      except OSError:
+                          break
+                      if not data:
+                          break
+                      transcript.extend(data)
+                      cursor.feed(data.decode('utf-8', errors='replace'))
+                      if b'\x1b[6n' in data:
+                          report = f'\x1b[{cursor.row};{cursor.col}R' if mode == 'tracked' else '\x1b[1;1R'
+                          os.write(fd, report.encode())
+
+              drain(1.5)
+              os.write(fd, PROMPT_SETUP.encode())
+              drain(0.5)
+              os.write(fd, b'Write-Output "first-ok"\r')
+              drain(settle_seconds)
+              os.write(fd, b'Write-Output "second-ok"\r')
+              drain(settle_seconds)
+              os.write(fd, b'exit\r')
+              drain(0.5)
+              os.close(fd)
+              return bytes(transcript)
+
+          # The provider spawns pwsh with TERM=dumb, NO_COLOR, and a resolved
+          # window size (rows 40, cols 160 by default). The window size is the
+          # axis PSReadLine's renderer divides by.
+          PROVIDER = {'TERM': 'dumb', 'NO_COLOR': '1'}
+          CASES = [
+              ('window 40x160, home replies', PROVIDER, 'home', (40, 160)),
+              ('window 40x160, tracked replies', PROVIDER, 'tracked', (40, 160)),
+          ]
+          for label, overrides, answers, window in CASES:
+              transcript = run_session(overrides, answers, window)
+              print(f'=== {label} ===')
+              print('total bytes:', len(transcript))
+              print('cursor queries:', transcript.count(b'\x1b[6n'))
+              print('PSReadLine crash:', b'DivideByZeroException' in transcript)
+              print('prompt markers:', transcript.count(MARKER))
+              print('first submission executed:', b'first-ok' in transcript)
+              print('second submission executed:', b'second-ok' in transcript)
+              print('first-ok echoes:', transcript.count(b'first-ok'))
+              print('prompt setup echoes:', transcript.count(b'[char]27'))
+              print('carriage returns:', transcript.count(b'\r'))
+              print('erase-to-end-of-line:', transcript.count(b'\x1b[K'))
+              second = transcript.find(b'first-ok', transcript.find(b'first-ok') + 1)
+              print('before second echo:', repr(transcript[max(0, second - 60):second + 20]))
+              print('transcript:', repr(transcript[:1200]))
+          PY
+
+      - name: Summarize what the transcript contains
+        continue-on-error: true
+        run: |
+          grep -E '^(=== |total bytes|cursor queries|PSReadLine crash|prompt markers|first submission|second submission|first-ok echoes|prompt setup echoes|carriage returns|erase-to-end-of-line|before second echo)' pwsh-pty-transcript.txt || true
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pwsh-pty-diagnostic
+          path: |
+            pwsh-suites.log
+            pwsh-node-pty-probe.txt
+            pwsh-pty-transcript.txt
