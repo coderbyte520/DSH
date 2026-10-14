@@ -176,6 +176,44 @@ jobs:
           await run('no cursor replies', ['-NoLogo', '-NoProfile'], 'none')
           await run('home replies', ['-NoLogo', '-NoProfile'], 'home')
           await run('tracked replies', ['-NoLogo', '-NoProfile'], 'tracked')
+
+          // The backend's own sequence, timed: bootstrap, wait for the rendered
+          // prompt, then one command, with the arrival time of every chunk after
+          // the command write.
+          const term = nodePty.spawn('pwsh', ['-NoLogo', '-NoProfile'], {
+            name: 'xterm-256color',
+            cols: 160,
+            rows: 40,
+            cwd: process.cwd(),
+            env: { ...process.env, TERM: 'dumb', NO_COLOR: '1' },
+          })
+          let seen = ''
+          let markerAt = 0
+          let commandAt = 0
+          const arrivals = []
+          const cursor = createCursor(160)
+          term.onData((data) => {
+            seen += data
+            cursor.feed(data)
+            if (data.includes('\x1b[6n')) term.write(cursor.report())
+            const now = Date.now()
+            if (commandAt > 0) arrivals.push(`${String(now - commandAt)}ms:${String(data.length)}`)
+            if (markerAt === 0 && seen.includes('\x1b]133;D;')) markerAt = now
+          })
+          const bootstrapAt = Date.now()
+          term.write(`${BOOTSTRAP}\r`)
+          while (markerAt === 0 && Date.now() - bootstrapAt < 10_000) await wait(25)
+          console.log('=== backend sequence ===')
+          console.log('bootstrap to first marker (ms):', markerAt - bootstrapAt)
+          await wait(100)
+          const settled = seen
+          commandAt = Date.now()
+          term.write('$env:KEEP = "ok"; Set-Location /\r')
+          await wait(2000)
+          console.log('marker after command:', seen.slice(settled.length).includes('\x1b]133;D;'))
+          console.log('arrivals after command:', arrivals.join(' ') || '(none)')
+          console.log('bytes after command:', seen.length - settled.length)
+          term.kill()
           JS
 
       # The same submissions against a bare pseudo-terminal, once per
