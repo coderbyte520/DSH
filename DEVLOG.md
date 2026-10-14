@@ -149,6 +149,8 @@
 
 第二轮：并发降到 2 后 web 池的失败从 8 条降到 3 条（`goal-multi-turn-actions`／`shipped-composition`／`startup-auto-selection`），但仍是同一族"组装应用启动超时"，于是把这一族并入 `run-web-snapshots.ts` 的**串行名单**（该名单本意就是让需要独占资源的浏览器 owner 逐个运行：每个场景都要起一个宿主进程加一个浏览器执行整套客户端 bundle，在 2 核上两个这样的 owner 会互相饿死）。同一轮里 `test:snapshot` 又冒出两条抖动：`subagent-continuable-inheritance` 撞上快照 harness 的 10 秒轮询上限（子代理第二轮在负载下没来得及落盘），已把该默认上限提到 30 秒；headless 的 provider-comments 用例偶尔看到 2 个模型请求（环境侧瞬时失败触发的重试，上一次跑是绿的），暂不放宽断言，改为在失败信息里带上两次请求体，以便下次出现时能直接判定是重试还是第二轮。
 
+第三轮（串行化之后）：**web 池的红从 8 条降到 1 条**，整条车道从 438s 降到 172s，`test:snapshot` 部分全绿（`agent-instructions`、headless、两个 pwsh 场景、`built-boot` 都不再失败）。剩下的唯一一条是 `goal-multi-turn-actions.e2e.ts`，而且看起来**不是负载问题**：两轮 Goal 的回放里，实测事件流给出 `turn/end` = `[1, 1]`，而钉住的是 `[1, 2]`；同一条用例对**夹具本身**的断言（`goalRounds(fixtureEvents) === [1, 2]`）是通过的，说明夹具里确实有两轮，但实时运行时第二轮没有开启新 turn。需要作为独立问题排查（怀疑与本分支祖先里那批 goal-continuation／goal-round 改动有关），不属于 CI 契约层。
+
 ## 2026-10-12 · 阶段一：verifiable-reward 机械打分落地
 
 **目标**：让一次运行的可观察事实（执行的命令、退出码、测试通过/失败数）变成可回放、可筛选的持久分数，为后续采样与训练提供不依赖模型判断的奖励信号。
