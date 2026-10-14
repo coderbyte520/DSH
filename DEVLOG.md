@@ -138,6 +138,15 @@
 
 **快照车道当时仍红**：`headless stream-json`（provider comments 一条）、`built-boot`，以及一批 web e2e（`steering`／`queue-actions`／`goal-multi-turn-actions`／`shipped-composition`／`startup-auto-selection`，整车道 338s）；这批 web 用例在不同轮次之间集合会变，像是负载相关，需单独复跑确认。两个 pwsh 快照场景与 `agent-instructions` 已不在失败列表里。
 
+## 2026-10-14 · 快照车道收口（软链接、品牌标记、HMR 上限、web 并发）
+
+复跑确认了哪些是稳定漂移、哪些是负载抖动，随后逐个处理：
+
+- **索引里一个软链接都没有**（`git ls-files -s` 的 `120000` 条目为 0）：上游树里的软链接在 Windows 导入时被提交成"内容等于链接目标"的普通文件。于是 Linux 检出的 `examples/acp-agent/tests/snapshots/agent-instructions/workspace/AGENTS.md` 是普通文件，工作区指令收集器读到的就是字面量 `AGENTS.canonical.md`，与钉住的 `Root snapshot instruction.` 不符。已恢复 8 个路径的索引类型：4 处 `CLAUDE.md → AGENTS.md`、`.claude/skills → ../.agents/skills`、两处 fixture workspace 链接（内容不变，仅索引类型变化；Windows 工作区仍以普通文件物化且被视为干净）。`agent-instructions` 与 headless 那条（provider comments）随之转绿。
+- **`built-boot` 钉的是已退役的 inline 字标**：品牌合并把 `viewBox="26 0 156 24"` 的 inline 字标换成单一 `logo-mark.svg`，由 official occupant 渲染为图片；断言改为 `img[src="/logo-mark.svg"]`。本机复现需按 CI 用 `DSH_BUILD_CLIENT_PROFILE=official` 构建——本地档按设计会保留 shell 的 fallback 标签，所以本地档下第二条断言必然为真。
+- **HMR 用例的就绪上限低于冷编译**：`dev:web` 要先编译全部客户端包才打印 `dev-web: watching`（本机热态 31s，CI 冷态超过 60s），共享的 60s 上限因此失败；该等待放宽到 180s、用例超时提到 300s，此后 `hmr-live` 通过（100.9s）。
+- **web 浏览器池在 2 核 runner 上开了 6 个 worker**：过度订阅使组装 UI 的启动超过各用例自己的元素等待，池内失败集合逐轮变化（`steering`／`queue-actions`／`startup-auto-selection`／`shipped-composition`／`goal-multi-turn-actions`／`chat-scroll`／`workflow-run`／`smoke-real`）。按标准 runner 的核数收敛为 2 个 worker。
+
 ## 2026-10-12 · 阶段一：verifiable-reward 机械打分落地
 
 **目标**：让一次运行的可观察事实（执行的命令、退出码、测试通过/失败数）变成可回放、可筛选的持久分数，为后续采样与训练提供不依赖模型判断的奖励信号。
