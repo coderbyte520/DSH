@@ -147,6 +147,8 @@
 - **HMR 用例的就绪上限低于冷编译**：`dev:web` 要先编译全部客户端包才打印 `dev-web: watching`（本机热态 31s，CI 冷态超过 60s），共享的 60s 上限因此失败；该等待放宽到 180s、用例超时提到 300s，此后 `hmr-live` 通过（100.9s）。
 - **web 浏览器池在 2 核 runner 上开了 6 个 worker**：过度订阅使组装 UI 的启动超过各用例自己的元素等待，池内失败集合逐轮变化（`steering`／`queue-actions`／`startup-auto-selection`／`shipped-composition`／`goal-multi-turn-actions`／`chat-scroll`／`workflow-run`／`smoke-real`）。按标准 runner 的核数收敛为 2 个 worker。
 
+第二轮：并发降到 2 后 web 池的失败从 8 条降到 3 条（`goal-multi-turn-actions`／`shipped-composition`／`startup-auto-selection`），但仍是同一族"组装应用启动超时"，于是把这一族并入 `run-web-snapshots.ts` 的**串行名单**（该名单本意就是让需要独占资源的浏览器 owner 逐个运行：每个场景都要起一个宿主进程加一个浏览器执行整套客户端 bundle，在 2 核上两个这样的 owner 会互相饿死）。同一轮里 `test:snapshot` 又冒出两条抖动：`subagent-continuable-inheritance` 撞上快照 harness 的 10 秒轮询上限（子代理第二轮在负载下没来得及落盘），已把该默认上限提到 30 秒；headless 的 provider-comments 用例偶尔看到 2 个模型请求（环境侧瞬时失败触发的重试，上一次跑是绿的），暂不放宽断言，改为在失败信息里带上两次请求体，以便下次出现时能直接判定是重试还是第二轮。
+
 ## 2026-10-12 · 阶段一：verifiable-reward 机械打分落地
 
 **目标**：让一次运行的可观察事实（执行的命令、退出码、测试通过/失败数）变成可回放、可筛选的持久分数，为后续采样与训练提供不依赖模型判断的奖励信号。

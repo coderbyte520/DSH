@@ -563,7 +563,9 @@ describe('headless stream-json snapshots', () => {
       })
 
       expect(result.stderr).toBe('')
-      expect(server.requests).toHaveLength(1)
+      // The request bodies are the evidence when this ever sees a second
+      // attempt: a retry repeats the first prompt, a second turn does not.
+      expect(server.requests, JSON.stringify(server.requests)).toHaveLength(1)
       expect(server.requests[0]?.max_tokens).toBe(256_000)
       expect(server.requests[0]?.reasoning_effort).toBe('low')
       const header = (parseJsonl(result.stdout)

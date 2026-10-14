@@ -1,10 +1,26 @@
-/** Run serial browser owners before one bounded snapshot pool. */
+/**
+ * Run serial browser owners before one bounded snapshot pool.
+ *
+ * Every browser scenario boots the assembled app — a host process plus a
+ * browser executing the full client bundle set, which is CPU-bound. Two such
+ * owners on the standard two-core runner starve each other's boot and the specs
+ * fail on their own element waits, so the scenarios whose first wait is the
+ * assembled boot run one at a time.
+ */
 import { spawn } from 'node:child_process'
 import { pnpmInvocation } from './pnpm-invocation.ts'
 
 const serialFiles = [
   'apps/web/tests/hmr-live.e2e.ts',
   'apps/web/tests/cordis-tool-round.e2e.ts',
+  'apps/web/tests/chat-scroll-contract.e2e.ts',
+  'apps/web/tests/goal-multi-turn-actions.e2e.ts',
+  'apps/web/tests/queue-actions.e2e.ts',
+  'apps/web/tests/shipped-composition.e2e.ts',
+  'apps/web/tests/smoke-real.e2e.ts',
+  'apps/web/tests/startup-auto-selection.e2e.ts',
+  'apps/web/tests/steering.e2e.ts',
+  'apps/web/tests/workflow-run.e2e.ts',
 ]
 const workerRaw = process.env.DSH_WEB_SNAPSHOT_WORKERS
 const workers = Number.parseInt(workerRaw ?? '', 10)

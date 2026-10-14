@@ -34,7 +34,12 @@ import { launchAcpTestAgent, type AgentUnderTest, type LaunchedAcpTestAgent } fr
 
 export type { AgentUnderTest } from './launcher.ts'
 
-const DEFAULT_WAIT_TIMEOUT_MS = 10_000
+// A scenario's declared wait is a bound on how long the *product* may take to
+// persist a step, not a budget for the runner: on a two-core standard runner
+// under the browser pool, a subagent's second turn has taken longer than ten
+// seconds to appear. The bound is for the failed case's duration, not for
+// correctness, so it sits well above the observed worst case.
+const DEFAULT_WAIT_TIMEOUT_MS = 30_000
 const WAIT_POLL_INTERVAL_MS = 10
 
 /**
