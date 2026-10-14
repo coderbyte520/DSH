@@ -191,11 +191,15 @@ jobs:
           let markerAt = 0
           let commandAt = 0
           const arrivals = []
+          const queries = []
           const cursor = createCursor(160)
           term.onData((data) => {
             seen += data
             cursor.feed(data)
-            if (data.includes('\x1b[6n')) term.write(cursor.report())
+            if (data.includes('\x1b[6n')) {
+              if (commandAt > 0) queries.push(`${String(Date.now() - commandAt)}ms`)
+              term.write(cursor.report())
+            }
             const now = Date.now()
             if (commandAt > 0) arrivals.push(`${String(now - commandAt)}ms:${String(data.length)}`)
             if (markerAt === 0 && seen.includes('\x1b]133;D;')) markerAt = now
@@ -212,6 +216,7 @@ jobs:
           await wait(2000)
           console.log('marker after command:', seen.slice(settled.length).includes('\x1b]133;D;'))
           console.log('arrivals after command:', arrivals.join(' ') || '(none)')
+          console.log('cursor queries after command:', queries.join(' ') || '(none)')
           console.log('bytes after command:', seen.length - settled.length)
           term.kill()
           JS
