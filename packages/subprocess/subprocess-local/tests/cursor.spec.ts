@@ -43,6 +43,8 @@ describe('TerminalCursor', () => {
     expect(report({ rows: 24, cols: 80 }, '\x1b[6n')).toBe('\x1b[1;1R')
     expect(report({ rows: 24, cols: 80 }, '\x1bM')).toBe('\x1b[1;1R')
     expect(report({ rows: 24, cols: 80 }, '\x1b]0;title\x1b\\')).toBe('\x1b[1;1R')
+    // Other control characters are not printable cells either.
+    expect(report({ rows: 24, cols: 80 }, 'a\x07\t\x0fb')).toBe('\x1b[1;3R')
   })
 
   it('carries a control sequence that is cut off across chunks', () => {

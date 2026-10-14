@@ -107,9 +107,9 @@ export class TerminalCursor {
 
   /** Apply absolute cursor addressing, ignoring an unparseable or partial parameter list. */
   private moveTo(parameters: string): void {
-    const [rowText, colText] = parameters.split(';')
-    const row = Number.parseInt(rowText ?? '', 10)
-    const col = Number.parseInt(colText ?? '', 10)
+    const separator = parameters.indexOf(';')
+    const row = Number.parseInt(separator < 0 ? parameters : parameters.slice(0, separator), 10)
+    const col = separator < 0 ? Number.NaN : Number.parseInt(parameters.slice(separator + 1), 10)
     if (Number.isSafeInteger(row) && row > 0) this.row = Math.min(row, this.window.rows)
     if (Number.isSafeInteger(col) && col > 0) this.col = Math.min(col, this.window.cols)
   }
