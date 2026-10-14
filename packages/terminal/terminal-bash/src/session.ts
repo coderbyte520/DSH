@@ -174,6 +174,17 @@ class LocalSendOperation implements TerminalSendOperation {
 export class LocalPtySession implements TerminalBackendSession {
   motd = ''
   readonly pid: number
+
+  /**
+   * The rendered tail after the latest owned prompt marker, or `undefined`
+   * before any marker. Startup uses it to tell a rendered prompt from text that
+   * only names the prompt string, such as the echoed bootstrap source.
+   * @returns the rendered tail, when one has been observed.
+   */
+  get renderedPromptTail(): string | undefined {
+    return this.renderedTail
+  }
+
   private readonly decoder = new TextDecoder()
   private readonly sanitizer: TerminalSanitizer
   private readonly scrollback: BoundedTextBuffer
@@ -195,6 +206,8 @@ export class LocalPtySession implements TerminalBackendSession {
   private polling = false
   private promptSeen = false
   private promptTextSeen = false
+  /** Rendered tail after the latest owned marker; survives send boundaries. */
+  private renderedTail: string | undefined
   private promptTail = ''
   private shellPgid: number | undefined
   private initializing = false
@@ -398,6 +411,10 @@ export class LocalPtySession implements TerminalBackendSession {
   private onData(data: string): void {
     const sanitized = this.sanitizer.push(data)
     this.appendOutput(sanitized.text, sanitized.retract ?? 0)
+    // The sanitizer tracks this only after an owned marker, so it is evidence of
+    // a rendered prompt rather than of text that merely names one. It survives
+    // send boundaries because the sanitizer's line model does.
+    if (sanitized.promptTail !== undefined) this.renderedTail = sanitized.promptTail
     if (sanitized.prompt) {
       // TODO(pty-delayed-signal-prompt): With a reproducer, define a marker-generation boundary
       // before attributing a signal-delayed prompt to a later send.

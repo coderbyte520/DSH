@@ -350,6 +350,7 @@ describe('BashTerminalBackend startup rollback', () => {
     let sent: TerminalSendRequest | undefined
     const session = {
       motd: '',
+      renderedPromptTail: 'dsh> ',
       startSend: (request: TerminalSendRequest) => {
         sent = request
         return {
@@ -386,6 +387,9 @@ describe('BashTerminalBackend startup rollback', () => {
     const sends: TerminalSendRequest[] = []
     const session = {
       motd: '',
+      get renderedPromptTail(): string | undefined {
+        return sends.length > 1 ? 'dsh> ' : undefined
+      },
       startSend: (request: TerminalSendRequest) => {
         sends.push(request)
         const second = sends.length > 1
@@ -420,14 +424,17 @@ describe('BashTerminalBackend startup rollback', () => {
     const sends: TerminalSendRequest[] = []
     const session = {
       motd: '',
+      get renderedPromptTail(): string | undefined {
+        return sends.length > 1 ? 'dsh> ' : undefined
+      },
       startSend: (request: TerminalSendRequest) => {
         sends.push(request)
-        const ready = sends.length > 1
         return {
           done: Promise.resolve({
             // The first viewport is the line editor echoing the bootstrap source,
-            // which contains the prompt string but does not end with it.
-            viewport: ready ? 'dsh> ' : "function prompt { ': 'dsh> ' }",
+            // which contains the prompt string. Only the marker-anchored render
+            // ends startup, so startup keeps sending here.
+            viewport: sends.length > 1 ? 'dsh> ' : "function prompt { ': 'dsh> ' }",
             waitReason: 'inferred_idle' as const,
             sessionStatus: { kind: 'running' as const }, truncated: false,
           }),
@@ -455,6 +462,7 @@ describe('BashTerminalBackend startup rollback', () => {
     await ctx.plugin(EmptySandbox)
     await ctx.plugin(SandboxPolicyService, { mode: 'danger-full-access', workspaceRoot: '/workspace' })
     const sessionFor = (waitReason: TerminalWaitReason): LocalPtySession => ({
+      renderedPromptTail: undefined,
       startSend: () => ({
         done: Promise.resolve({
           viewport: 'no-prompt', waitReason,
@@ -479,6 +487,7 @@ describe('BashTerminalBackend startup rollback', () => {
     const sends: TerminalSendRequest[] = []
     const session = {
       motd: '',
+      renderedPromptTail: 'dsh> ',
       startSend: (request: TerminalSendRequest) => {
         sends.push(request)
         return {

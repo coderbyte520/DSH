@@ -222,6 +222,10 @@ describe('LocalPtySession readiness and output', () => {
     const session = makeSession(terminal, new FakeInspector(), config())
     await initialize(session, terminal)
 
+    // The marker-anchored render is what startup publishes on, and it survives
+    // the send boundary that clears the per-send prompt flags.
+    expect(session.renderedPromptTail).toBe('dsh> ')
+
     terminal.emitData('\x1b]133;D;0\x07dsh> ab')
     // A line editor repaints through cursor addressing; a reader sees the last
     // render, so the retained text drops the one it replaces.

@@ -103,16 +103,6 @@ function spawnArgv(ctx: Context, config: ResolvedConfig, policy: SandboxExecutio
 // TODO(pty-initialize-race-home): Fold this outer abort race into
 // LocalPtySession.initialize when the send-state consolidation lands; the
 // session already owns the send lifecycle the race protects.
-/**
- * Drop trailing line terminators so a prompt followed by a newline still
- * matches the controlled prompt, whose own last character is a space.
- * @param text - retained or per-send terminal text.
- * @returns the text without trailing line terminators.
- */
-function withoutTrailingNewlines(text: string): string {
-  return text.replace(/[\r\n]+$/, '')
-}
-
 async function startupSession(
   session: LocalPtySession,
   dialect: ShellDialect,
@@ -148,11 +138,10 @@ async function startupSession(
       if (result.waitReason === 'session_exit') throw new Error('PTY shell exited during startup')
       if (result.waitReason === 'timeout') throw new Error('PTY shell did not reach readiness before startup timeout')
       viewport = result.viewport
-      const scrollback = session.read({ offset: 0, count: 20 }).text
-      // Only line terminators are trailing noise here: the controlled prompt
-      // itself ends with a space, so trimming all whitespace would never match.
-      if (withoutTrailingNewlines(viewport).endsWith(CONTROLLED_PROMPT)
-        || withoutTrailingNewlines(scrollback).endsWith(CONTROLLED_PROMPT)) break
+      // The sanitizer renders this tail only after an owned marker, so it is a
+      // rendered prompt rather than text that merely names one — the line
+      // editor echoes the bootstrap source, which contains the prompt string.
+      if (session.renderedPromptTail === CONTROLLED_PROMPT) break
     }
     session.motd = viewport
   }
