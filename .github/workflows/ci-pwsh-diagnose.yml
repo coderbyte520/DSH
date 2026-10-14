@@ -74,10 +74,6 @@ jobs:
       - name: Probe pwsh through node-pty (the provider transport)
         continue-on-error: true
         shell: bash
-        env:
-          # Compare immediate cursor replies with replies delayed past the
-          # window in which the child issues the query.
-          PWSH_PROBE_REPLY_DELAY_MS: '150'
         run: |
           set -o pipefail
           pnpm --filter @vreal/dsh-subprocess-local exec node --input-type=module - <<'JS' 2>&1 | tee pwsh-node-pty-probe.txt
@@ -197,15 +193,12 @@ jobs:
           const arrivals = []
           const queries = []
           const cursor = createCursor(160)
-          const replyDelayMs = Number.parseInt(process.env.PWSH_PROBE_REPLY_DELAY_MS ?? '', 10)
           term.onData((data) => {
             seen += data
             cursor.feed(data)
             if (data.includes('\x1b[6n')) {
               if (commandAt > 0) queries.push(`${String(Date.now() - commandAt)}ms`)
-              const report = cursor.report()
-              if (Number.isSafeInteger(replyDelayMs) && replyDelayMs > 0) setTimeout(() => term.write(report), replyDelayMs)
-              else term.write(report)
+              term.write(cursor.report())
             }
             const now = Date.now()
             if (commandAt > 0) arrivals.push(`${String(now - commandAt)}ms:${String(data.length)}`)

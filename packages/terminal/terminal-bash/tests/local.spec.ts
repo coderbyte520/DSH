@@ -285,7 +285,11 @@ describe.skipIf(!hasPwsh)('terminal-bash pwsh real shell', () => {
     process.env.DSH_TEST_SECRET = 'must-not-leak'
     try {
       const { ctx, root, agent } = await harness('danger-full-access', {
-        idleSilenceMs: 300,
+        // Measured on the current Ubuntu image: after the input paint, pwsh
+        // 7.6.6 stays silent for about 0.42s before it renders the next prompt,
+        // so the silence bound must sit above that. At 300ms this send settled
+        // as inferred idle before the prompt marker could decide it.
+        idleSilenceMs: 1_000,
         handoffGraceMs: 300,
         timeoutMs: 8_000,
       }, 'pwsh')
@@ -317,7 +321,8 @@ describe.skipIf(!hasPwsh)('terminal-bash pwsh real shell', () => {
 
   it('pins UTF-8 output encoding so non-ASCII output survives the byte decode', async () => {
     const { ctx, root, agent } = await harness('danger-full-access', {
-      idleSilenceMs: 300,
+      // Same measured pwsh prompt gap as the bootstrap case above.
+      idleSilenceMs: 1_000,
       handoffGraceMs: 300,
       timeoutMs: 8_000,
     }, 'pwsh')
