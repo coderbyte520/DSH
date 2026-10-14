@@ -77,7 +77,7 @@ jobs:
         env:
           # Compare immediate cursor replies with replies delayed past the
           # window in which the child issues the query.
-          PWSH_PROBE_REPLY_DELAY_MS: '30'
+          PWSH_PROBE_REPLY_DELAY_MS: '150'
         run: |
           set -o pipefail
           pnpm --filter @vreal/dsh-subprocess-local exec node --input-type=module - <<'JS' 2>&1 | tee pwsh-node-pty-probe.txt
