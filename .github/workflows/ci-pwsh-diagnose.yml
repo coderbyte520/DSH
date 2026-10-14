@@ -57,10 +57,6 @@ jobs:
       - name: Replay the persistent-pwsh suites
         continue-on-error: true
         shell: bash
-        env:
-          # Temporary: the readiness decision is what the remaining failure turns
-          # on, and the trace prints the facts every decision and settlement used.
-          DSH_TERMINAL_READINESS_TRACE: '1'
         run: >-
           set -o pipefail &&
           pnpm exec vitest run

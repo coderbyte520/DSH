@@ -413,6 +413,43 @@ describe('BashTerminalBackend startup rollback', () => {
     expect(session.motd).toBe('dsh> ')
   })
 
+  it('keeps waiting while the echoed bootstrap names the prompt without rendering it', async () => {
+    const ctx = new Context()
+    await ctx.plugin(EmptySandbox)
+    await ctx.plugin(SandboxPolicyService, { mode: 'danger-full-access', workspaceRoot: '/workspace' })
+    const sends: TerminalSendRequest[] = []
+    const session = {
+      motd: '',
+      startSend: (request: TerminalSendRequest) => {
+        sends.push(request)
+        const ready = sends.length > 1
+        return {
+          done: Promise.resolve({
+            // The first viewport is the line editor echoing the bootstrap source,
+            // which contains the prompt string but does not end with it.
+            viewport: ready ? 'dsh> ' : "function prompt { ': 'dsh> ' }",
+            waitReason: 'inferred_idle' as const,
+            sessionStatus: { kind: 'running' as const }, truncated: false,
+          }),
+          readOutput: () => ({ delta: '', truncated: false }),
+          cancel: () => false,
+        }
+      },
+      read: () => ({ text: '', totalLines: 0, lineBegin: 0, lineEnd: 0, truncated: false }),
+    } as unknown as LocalPtySession
+    const backend = new BashTerminalBackend(
+      ctx,
+      { ...config(), shellDialect: 'pwsh', shellPath: 'pwsh' },
+      async () => terminalHandle(),
+      () => session,
+    )
+    await backend.spawn(spec(agent(ctx)))
+
+    // The echoed source is not a rendered prompt, so startup keeps sending.
+    expect(sends).toHaveLength(2)
+    expect(session.motd).toBe('dsh> ')
+  })
+
   it('rejects a pwsh bootstrap whose shell exits or times out', async () => {
     const ctx = new Context()
     await ctx.plugin(EmptySandbox)

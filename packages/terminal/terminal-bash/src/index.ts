@@ -103,6 +103,16 @@ function spawnArgv(ctx: Context, config: ResolvedConfig, policy: SandboxExecutio
 // TODO(pty-initialize-race-home): Fold this outer abort race into
 // LocalPtySession.initialize when the send-state consolidation lands; the
 // session already owns the send lifecycle the race protects.
+/**
+ * Drop trailing line terminators so a prompt followed by a newline still
+ * matches the controlled prompt, whose own last character is a space.
+ * @param text - retained or per-send terminal text.
+ * @returns the text without trailing line terminators.
+ */
+function withoutTrailingNewlines(text: string): string {
+  return text.replace(/[\r\n]+$/, '')
+}
+
 async function startupSession(
   session: LocalPtySession,
   dialect: ShellDialect,
@@ -121,8 +131,11 @@ async function startupSession(
     // UTF-8, and an un-pinned console writes its host code page for
     // non-ASCII output. The banner-to-prompt gap can outlast the silence
     // bound, so the wait loops over follow-up sends until the controlled
-    // prompt is actually visible (in the viewport or the retained scrollback
-    // when it landed between sends), bounded by the send deadline.
+    // prompt is actually rendered. Only the END of the retained text counts:
+    // a line editor echoes the bootstrap's own source, which names the prompt
+    // string, so matching anywhere in the text would publish a shell that has
+    // not reached its prompt yet. The scrollback covers a prompt that landed
+    // between sends, and the send deadline bounds the wait.
     let viewport = ''
     for (;;) {
       const first = viewport.length === 0
@@ -136,7 +149,10 @@ async function startupSession(
       if (result.waitReason === 'timeout') throw new Error('PTY shell did not reach readiness before startup timeout')
       viewport = result.viewport
       const scrollback = session.read({ offset: 0, count: 20 }).text
-      if (viewport.includes(CONTROLLED_PROMPT) || scrollback.includes(CONTROLLED_PROMPT)) break
+      // Only line terminators are trailing noise here: the controlled prompt
+      // itself ends with a space, so trimming all whitespace would never match.
+      if (withoutTrailingNewlines(viewport).endsWith(CONTROLLED_PROMPT)
+        || withoutTrailingNewlines(scrollback).endsWith(CONTROLLED_PROMPT)) break
     }
     session.motd = viewport
   }

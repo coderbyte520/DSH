@@ -461,9 +461,6 @@ export class LocalPtySession implements TerminalBackendSession {
       const foreground = await this.terminal.inspectForeground()
       if (this.active !== operation || this.closing || this.interrupting === operation) return
       const idleFor = Date.now() - this.lastOutputAt
-      if (process.env.DSH_TERMINAL_READINESS_TRACE === '1') {
-        process.stderr.write(`[readiness] promptSeen=${String(this.promptSeen)} promptTextSeen=${String(this.promptTextSeen)} tail=${JSON.stringify(this.promptTail)} idleFor=${String(idleFor)} fg=${String(foreground?.processGroupId)} shellPgid=${String(this.shellPgid)} waiting=${String(foreground?.inputWaiting)}\n`)
-      }
       if (this.promptSeen && foreground !== undefined && this.shellPgid === undefined) {
         this.shellPgid = foreground.processGroupId
       }
@@ -502,9 +499,6 @@ export class LocalPtySession implements TerminalBackendSession {
   private settleActive(waitReason: TerminalWaitReason, retainOwnership = false): void {
     const operation = this.active
     if (operation === undefined) return
-    if (process.env.DSH_TERMINAL_READINESS_TRACE === '1') {
-      process.stderr.write(`[settle] reason=${waitReason} op=${String(operation.startedAt)} promptSeen=${String(this.promptSeen)} promptTextSeen=${String(this.promptTextSeen)} tail=${JSON.stringify(this.promptTail)} idleFor=${String(Date.now() - this.lastOutputAt)} shellPgid=${String(this.shellPgid)}\n`)
-    }
     const scrollbackTruncated = this.scrollback.snapshot().truncated
     if (retainOwnership) {
       this.stopPolling()
